@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:succulent_app/screens/splash_screen.dart';
+import 'package:succulent_app/features/splash/presentation/pages/splash_screen.dart';
 
 void main() {
   runApp(const SucculentApp());

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../classification/classifier.dart';
-import '../classification/category.dart';
+import 'package:succulent_app/core/classification/classifier.dart';
+import 'package:succulent_app/core/classification/category.dart';
 
 class ClassificationTestScreen extends StatefulWidget {
   const ClassificationTestScreen({super.key});
