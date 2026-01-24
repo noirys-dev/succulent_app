@@ -6,7 +6,7 @@ void main() {
   runApp(const SucculentApp());
 }
 
-bool kShowClassificationTest = true;
+bool kShowClassificationTest = false;
 
 class SucculentApp extends StatelessWidget {
   const SucculentApp({super.key});
