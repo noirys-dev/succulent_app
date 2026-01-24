@@ -1,6 +1,8 @@
 import 'category.dart';
 
 class DictionaryEn {
+  /// Dictionary EN — v1 FINAL
+  /// Core habit anchors. Extended only via user overrides after this version.
   /// Strong intent anchors.
   static const Map<CategoryId, List<String>> anchors = {
     CategoryId.productivity: [
@@ -61,6 +63,8 @@ class DictionaryEn {
       "vacuum",
       "mop",
       "dishes",
+      "grocery",
+      "shopping",
     ],
     CategoryId.health: [
       "doctor",
@@ -80,6 +84,8 @@ class DictionaryEn {
       "call",
       "dinner with",
       "coffee with",
+      "chat",
+      "talk",
     ],
     CategoryId.general: [
       "netflix", "tiktok", "instagram", "scrolling",

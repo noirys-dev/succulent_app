@@ -32,7 +32,7 @@ class _SplashScreenState extends State<SplashScreen> {
     const darkGreen = Color(0xFF76966B); // #76966b
     const lightGreen = Color(0xFFC3CE98); // #c3ce98
     const cream = Color(0xFFF9EEDB); // #f9eedb
-    const darkGray = Color(0xFF636262);
+    const darkGray = Color(0xFF636262); // #636262
 
     return Scaffold(
       backgroundColor: cream,
