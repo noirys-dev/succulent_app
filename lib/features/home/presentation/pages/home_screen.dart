@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:succulent_app/core/classification/category.dart';
 import 'package:succulent_app/core/classification/classifier.dart';
+import 'package:succulent_app/features/focus/presentation/pages/focus_screen.dart';
 
 // Brand color palette
 const Color kDarkBrown = Color(0xFFA76D5A);
@@ -63,8 +65,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final double progressValue = 0.62;
-    final String completionPercentage = '62';
+    final int totalHabits = _habitEntries.length;
+    final int completedHabits =
+        _habitEntries.where((entry) => entry.isDone).length;
+    final double progressValue =
+        totalHabits == 0 ? 0.0 : completedHabits / totalHabits;
+    final String completionPercentage =
+        (progressValue * 100).toStringAsFixed(0);
     const double bottomPanelHeight = 220;
 
     return Scaffold(
@@ -109,6 +116,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 28),
+                    if (totalHabits > 0) ...[
+                      Text(
+                        '$completedHabits / $totalHabits',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: kCharcoal.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
                     Row(
                       children: [
                         Expanded(
@@ -138,59 +155,135 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (_habitEntries.isNotEmpty) ...[
                       const SizedBox(height: 20),
                       Column(
-                        children: _habitEntries
-                            .map(
-                              (entry) => Container(
-                                width: double.infinity,
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: kLightGreen.withOpacity(0.45),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: kDarkGreen.withOpacity(0.85),
+                        children: _habitEntries.asMap().entries.map(
+                          (entryItem) {
+                            final index = entryItem.key;
+                            final entry = entryItem.value;
+
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _habitEntries[index] = entry.copyWith(
+                                    isDone: !entry.isDone,
+                                  );
+                                });
+                                HapticFeedback.lightImpact();
+                              },
+                              child: Opacity(
+                                opacity: entry.isDone ? 0.6 : 1.0,
+                                child: Container(
+                                  width: double.infinity,
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: kLightGreen.withOpacity(0.45),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: kDarkGreen.withOpacity(0.85),
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            entry.habitText,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: kCharcoal,
+                                              decoration: entry.isDone
+                                                  ? TextDecoration.lineThrough
+                                                  : TextDecoration.none,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                entry.durationText,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: kCharcoal
+                                                      .withOpacity(0.8),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                entry.categoryLabel,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: kCharcoal
+                                                      .withOpacity(0.8),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      if (entry.categoryLabel == 'Productivity')
+                                        Positioned(
+                                          right: 0,
+                                          top: 0,
+                                          child: GestureDetector(
+                                            onTap: () async {
+                                              final result =
+                                                  await Navigator.of(context)
+                                                      .push(
+                                                MaterialPageRoute(
+                                                  builder: (_) => FocusScreen(
+                                                    taskTitle: entry.habitText,
+                                                    plannedDuration:
+                                                        _parseDuration(entry
+                                                                .durationText) ??
+                                                            entry
+                                                                .plannedDuration,
+                                                    category: 'Productivity',
+                                                  ),
+                                                ),
+                                              );
+
+                                              if (!mounted) return;
+
+                                              if (result is Map &&
+                                                  result['completed'] == true) {
+                                                final updated =
+                                                    result['updatedDuration'];
+
+                                                if (updated is Duration) {
+                                                  setState(() {
+                                                    _habitEntries[index] =
+                                                        entry.copyWith(
+                                                      plannedDuration: updated,
+                                                      durationText:
+                                                          _formatDurationText(
+                                                              updated),
+                                                    );
+                                                  });
+                                                }
+                                              }
+                                            },
+                                            child: Icon(
+                                              Icons.play_circle_outline,
+                                              size: 20,
+                                              color:
+                                                  kDarkGreen.withOpacity(0.8),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      entry.habitText,
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                        color: kCharcoal,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      children: [
-                                        Text(
-                                          entry.durationText,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: kCharcoal.withOpacity(0.8),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          entry.categoryLabel,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: kCharcoal.withOpacity(0.8),
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
                               ),
-                            )
-                            .toList(),
+                            );
+                          },
+                        ).toList(),
                       ),
                     ],
                   ],
@@ -326,6 +419,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 habitText: habitText,
                                 durationText: _selectedDuration,
                                 categoryLabel: _categoryLabel(finalCategory),
+                                plannedDuration:
+                                    _parseDuration(_selectedDuration) ??
+                                        const Duration(),
                               ),
                             );
 
@@ -495,6 +591,30 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
+
+  Duration? _parseDuration(String text) {
+    final hourMatch = RegExp(r'(\d+)\s*h').firstMatch(text);
+    final minuteMatch = RegExp(r'(\d+)\s*m').firstMatch(text);
+
+    final hours = hourMatch != null ? int.tryParse(hourMatch.group(1)!) : null;
+    final minutes =
+        minuteMatch != null ? int.tryParse(minuteMatch.group(1)!) : null;
+
+    if (hours == null && minutes == null) {
+      return null;
+    }
+
+    return Duration(hours: hours ?? 0, minutes: minutes ?? 0);
+  }
+
+  String _formatDurationText(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60);
+
+    if (h > 0 && m > 0) return '${h}h ${m}m';
+    if (h > 0) return '${h}h';
+    return '${m}m';
+  }
 }
 
 class _NumberPicker extends StatelessWidget {
@@ -535,10 +655,30 @@ class _HabitEntry {
   final String habitText;
   final String durationText;
   final String categoryLabel;
+  final Duration plannedDuration;
+  final bool isDone;
 
   const _HabitEntry({
     required this.habitText,
     required this.durationText,
     required this.categoryLabel,
+    required this.plannedDuration,
+    this.isDone = false,
   });
+
+  _HabitEntry copyWith({
+    String? habitText,
+    String? durationText,
+    String? categoryLabel,
+    Duration? plannedDuration,
+    bool? isDone,
+  }) {
+    return _HabitEntry(
+      habitText: habitText ?? this.habitText,
+      durationText: durationText ?? this.durationText,
+      categoryLabel: categoryLabel ?? this.categoryLabel,
+      plannedDuration: plannedDuration ?? this.plannedDuration,
+      isDone: isDone ?? this.isDone,
+    );
+  }
 }
