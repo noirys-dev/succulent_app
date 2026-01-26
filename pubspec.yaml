@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_svg: ^2.0.9
+  audioplayers: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -22,6 +23,7 @@ flutter:
   assets:
     - assets/app-icon.svg
     - assets/splash-icon.svg
+    - assets/audio/lofi_focus.mp3
   fonts:
     - family: Brawler
       fonts:
