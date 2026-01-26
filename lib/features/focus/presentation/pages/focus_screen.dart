@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 // Brand color palette (mirrors HomeScreen)
@@ -11,11 +13,13 @@ const Color kCharcoal = Color(0xFF636262);
 class FocusScreen extends StatefulWidget {
   final String taskTitle;
   final Duration plannedDuration;
+  final int taskIndex;
 
   const FocusScreen({
     super.key,
     required this.taskTitle,
     required this.plannedDuration,
+    required this.taskIndex,
   });
 
   @override
@@ -109,10 +113,13 @@ class _FocusScreenState extends State<FocusScreen> {
   void _finishSession() {
     _timer?.cancel();
     _stopLofi();
-    Navigator.of(context).pop({
-      'updatedDuration': _sessionTargetDuration,
-      'completed': true,
-    });
+    if (_isCompleted) {
+      Navigator.of(context).pop({
+        'updatedDuration': _sessionTargetDuration,
+        'completed': true,
+        'taskIndex': widget.taskIndex,
+      });
+    }
   }
 
   // FocusScreen returns updated duration to the caller (HomeScreen) when focus ends.
@@ -233,9 +240,9 @@ class _FocusScreenState extends State<FocusScreen> {
             children: [
               const SizedBox(height: 8),
               _SoundOption(
-                label: 'None',
+                label: 'Off',
                 onTap: () {
-                  setState(() => _sound = 'None');
+                  setState(() => _sound = 'Off');
                   if (_isRunning) {
                     _stopLofi();
                   }
@@ -270,221 +277,328 @@ class _FocusScreenState extends State<FocusScreen> {
     );
   }
 
+  void _showPlatformDialog({
+    required String title,
+    required String content,
+    required String confirmText,
+    required String cancelText,
+    required bool destructive,
+    required VoidCallback onConfirm,
+  }) {
+    if (Platform.isIOS) {
+      showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return CupertinoAlertDialog(
+            title: Text(title),
+            content: Text(content),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(cancelText),
+              ),
+              CupertinoDialogAction(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  onConfirm();
+                },
+                isDestructiveAction: destructive,
+                isDefaultAction: !destructive,
+                child: Text(confirmText),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(cancelText),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                onConfirm();
+              },
+              child: Text(confirmText),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showEndSessionDialog() {
+    final wasRunning = _isRunning;
+    _stopTimer();
+    // If already completed, offer to finish instead of end
+    if (_isCompleted) {
+      _showPlatformDialog(
+        title: 'Focus session complete',
+        content: 'Save this session to grow your progress?',
+        confirmText: 'Save session',
+        cancelText: 'Not now',
+        destructive: false,
+        onConfirm: _finishSession,
+      );
+      return;
+    }
+
+    _showPlatformDialog(
+      title: 'End focus session?',
+      content: wasRunning
+          ? 'This session is paused and won’t be marked as completed.'
+          : 'Leave focus session?',
+      confirmText: 'End session',
+      cancelText: 'Keep focusing',
+      destructive: true,
+      onConfirm: _endFocus,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kDarkGreen,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                'Deep Focus Session',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: kCreme.withOpacity(0.8),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 8),
-                    Text(
-                      'Currently working on:',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: kCreme.withOpacity(0.7),
-                      ),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        _showEndSessionDialog();
+      },
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragEnd: (details) {
+          if (details.primaryVelocity != null &&
+              details.primaryVelocity! > 300) {
+            _showEndSessionDialog();
+          }
+        },
+        child: Scaffold(
+          backgroundColor: kDarkGreen,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Deep Focus Session',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: kCreme.withOpacity(0.8),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.taskTitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: kCreme.withOpacity(0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      height: 120,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: kCreme.withOpacity(0.08),
-                      ),
-                    ),
-                    if (_isCompleted && _completionMessage != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        _completionMessage!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: kCreme.withOpacity(0.75),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: _openDurationSheet,
-                child: Text(
-                  _formatDuration(_remainingDuration),
-                  style: TextStyle(
-                    fontSize: 44,
-                    fontWeight: FontWeight.w600,
-                    color: kCreme,
-                    letterSpacing: 1.5,
                   ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                child: Builder(
-                  key: ValueKey<String>(
-                    _isCompleted
-                        ? 'completed'
-                        : _isRunning
-                            ? 'running'
-                            : 'idle',
-                  ),
-                  builder: (context) {
-                    if (_isCompleted) {
-                      // Finish Session button
-                      return SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: _finishSession,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kCreme,
-                            foregroundColor: kDarkGreen,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 8),
+                        Text(
+                          'Currently working on:',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: kCreme.withOpacity(0.7),
                           ),
-                          child: const Text(
-                            'Finish Session',
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.taskTitle,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: kCreme.withOpacity(0.9),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Container(
+                          height: 120,
+                          width: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: kCreme.withOpacity(0.08),
+                          ),
+                        ),
+                        if (_isCompleted && _completionMessage != null) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            _completionMessage!,
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      );
-                    } else if (_isRunning) {
-                      // Stop Session (outlined) + End Session (filled) buttons
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 52,
-                              child: OutlinedButton(
-                                onPressed: _stopTimer,
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: kCreme.withOpacity(0.9),
-                                  side: BorderSide(
-                                      color: kCreme.withOpacity(0.8),
-                                      width: 1.6),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Stop Session',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: SizedBox(
-                              height: 52,
-                              child: ElevatedButton(
-                                onPressed: _endFocus,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: kCreme,
-                                  foregroundColor: kDarkGreen,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'End Session',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: kCreme.withOpacity(0.75),
                             ),
                           ),
                         ],
-                      );
-                    } else {
-                      // Start Focus or Continue button
-                      return SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: (_sessionTargetDuration == Duration.zero)
-                              ? null
-                              : _startTimer,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kCreme,
-                            foregroundColor: kDarkGreen,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: Text(
-                            _remainingDuration < _sessionTargetDuration
-                                ? 'Continue'
-                                : 'Start Focus',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: _openSoundSheet,
-                child: Text(
-                  '🎧 Sound: $_sound ▾',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: kCreme.withOpacity(0.75),
+                      ],
+                    ),
                   ),
-                ),
+                  GestureDetector(
+                    onTap: _openDurationSheet,
+                    child: Text(
+                      _formatDuration(_remainingDuration),
+                      style: TextStyle(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w600,
+                        color: kCreme,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: Builder(
+                      key: ValueKey<String>(
+                        _isCompleted
+                            ? 'completed'
+                            : _isRunning
+                                ? 'running'
+                                : 'idle',
+                      ),
+                      builder: (context) {
+                        if (_isCompleted) {
+                          // Finish Session button
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: _finishSession,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kCreme,
+                                foregroundColor: kDarkGreen,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text(
+                                'Finish Session',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          );
+                        } else if (_isRunning) {
+                          // Stop Session (outlined) + End Session (filled) buttons
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 52,
+                                  child: OutlinedButton(
+                                    onPressed: _stopTimer,
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: kCreme.withOpacity(0.9),
+                                      side: BorderSide(
+                                          color: kCreme.withOpacity(0.8),
+                                          width: 1.6),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Stop Session',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 52,
+                                  child: ElevatedButton(
+                                    onPressed: _endFocus,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: kCreme,
+                                      foregroundColor: kDarkGreen,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'End Session',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        } else {
+                          // Start Focus or Continue button
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed:
+                                  (_sessionTargetDuration == Duration.zero)
+                                      ? null
+                                      : _startTimer,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kCreme,
+                                foregroundColor: kDarkGreen,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: Text(
+                                _remainingDuration < _sessionTargetDuration
+                                    ? 'Continue'
+                                    : 'Start Focus',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: _openSoundSheet,
+                    child: Text(
+                      '🎧 Sound: $_sound ▾',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: kCreme.withOpacity(0.75),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
         ),
       ),

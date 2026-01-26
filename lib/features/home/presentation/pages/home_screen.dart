@@ -169,6 +169,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 });
                                 HapticFeedback.lightImpact();
                               },
+                              onLongPress: () {
+                                if (entry.isDone) return;
+                                HapticFeedback.mediumImpact();
+                                _openEditHabitSheet(index);
+                              },
                               child: Opacity(
                                 opacity: entry.isDone ? 0.6 : 1.0,
                                 child: Container(
@@ -227,52 +232,95 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                         ],
                                       ),
-                                      if (entry.categoryLabel == 'Productivity')
+                                      if (entry.categoryLabel ==
+                                              'Productivity' &&
+                                          !entry.isDone)
                                         Positioned(
                                           right: 0,
                                           top: 0,
-                                          child: GestureDetector(
-                                            onTap: () async {
-                                              final result =
-                                                  await Navigator.of(context)
-                                                      .push(
-                                                MaterialPageRoute(
-                                                  builder: (_) => FocusScreen(
-                                                    taskTitle: entry.habitText,
-                                                    plannedDuration:
-                                                        _parseDuration(entry
-                                                                .durationText) ??
-                                                            entry
+                                          bottom: 0,
+                                          child: Center(
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
+                                                onTap: () async {
+                                                  final result =
+                                                      await Navigator.of(
+                                                              context)
+                                                          .push(
+                                                    MaterialPageRoute(
+                                                      builder: (_) =>
+                                                          FocusScreen(
+                                                        taskTitle:
+                                                            entry.habitText,
+                                                        plannedDuration:
+                                                            _parseDuration(entry
+                                                                    .durationText) ??
+                                                                entry
+                                                                    .plannedDuration,
+                                                        taskIndex: index,
+                                                      ),
+                                                    ),
+                                                  );
+
+                                                  if (result != null &&
+                                                      result['completed'] ==
+                                                          true) {
+                                                    final int completedIndex =
+                                                        result['taskIndex']
+                                                            as int;
+
+                                                    setState(() {
+                                                      final existing =
+                                                          _habitEntries[
+                                                              completedIndex];
+                                                      final Duration? updated =
+                                                          result['updatedDuration']
+                                                              as Duration?;
+
+                                                      _habitEntries[
+                                                              completedIndex] =
+                                                          existing.copyWith(
+                                                        isDone: true,
+                                                        plannedDuration: updated ??
+                                                            existing
                                                                 .plannedDuration,
+                                                        durationText: updated !=
+                                                                null
+                                                            ? _formatDurationText(
+                                                                updated)
+                                                            : existing
+                                                                .durationText,
+                                                      );
+                                                    });
+                                                  }
+                                                },
+                                                onLongPress: () {},
+                                                child: Container(
+                                                  width: 36,
+                                                  height: 36,
+                                                  decoration: BoxDecoration(
+                                                    color: kLightGreen
+                                                        .withOpacity(0.35),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            18),
+                                                    border: Border.all(
+                                                      color: kDarkGreen
+                                                          .withOpacity(0.9),
+                                                    ),
+                                                  ),
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons.play_arrow_rounded,
+                                                      size: 18,
+                                                      color: kDarkGreen,
+                                                    ),
                                                   ),
                                                 ),
-                                              );
-
-                                              if (!mounted) return;
-
-                                              if (result is Map &&
-                                                  result['completed'] == true) {
-                                                final updated =
-                                                    result['updatedDuration'];
-
-                                                if (updated is Duration) {
-                                                  setState(() {
-                                                    _habitEntries[index] =
-                                                        entry.copyWith(
-                                                      plannedDuration: updated,
-                                                      durationText:
-                                                          _formatDurationText(
-                                                              updated),
-                                                    );
-                                                  });
-                                                }
-                                              }
-                                            },
-                                            child: Icon(
-                                              Icons.play_circle_outline,
-                                              size: 20,
-                                              color:
-                                                  kDarkGreen.withOpacity(0.8),
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -613,6 +661,244 @@ class _HomeScreenState extends State<HomeScreen> {
     if (h > 0 && m > 0) return '${h}h ${m}m';
     if (h > 0) return '${h}h';
     return '${m}m';
+  }
+
+  void _openEditHabitSheet(int index) {
+    final entry = _habitEntries[index];
+    final TextEditingController textController =
+        TextEditingController(text: entry.habitText);
+    Duration tempDuration = entry.plannedDuration;
+    String formattedDuration = _formatDurationText(tempDuration);
+
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 24,
+            right: 24,
+            top: 24,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Edit Habit',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          color: kDarkBrown,
+                          tooltip: 'Delete',
+                          onPressed: () {
+                            setState(() {
+                              _habitEntries.removeAt(index);
+                            });
+                            Navigator.of(context).pop();
+                            HapticFeedback.lightImpact();
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    TextField(
+                      controller: textController,
+                      maxLines: 1,
+                      decoration: InputDecoration(
+                        hintText: "Edit habit",
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: kLightGreen.withOpacity(0.6),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: kLightGreen.withOpacity(0.6),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: kDarkGreen),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        const Icon(Icons.timer_outlined,
+                            size: 20, color: kDarkGreen),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () async {
+                            int tempHours = tempDuration.inHours;
+                            int tempMinutes =
+                                tempDuration.inMinutes.remainder(60);
+                            await showModalBottomSheet<void>(
+                              context: context,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(20)),
+                              ),
+                              builder: (context) {
+                                return StatefulBuilder(
+                                  builder: (context, setPickerState) {
+                                    return SafeArea(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text(
+                                              'Duration',
+                                              style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                _NumberPicker(
+                                                  value: tempHours,
+                                                  max: 12,
+                                                  label: 'h',
+                                                  onChanged: (v) {
+                                                    setPickerState(
+                                                        () => tempHours = v);
+                                                  },
+                                                ),
+                                                const SizedBox(width: 16),
+                                                _NumberPicker(
+                                                  value: tempMinutes,
+                                                  max: 59,
+                                                  label: 'm',
+                                                  onChanged: (v) {
+                                                    setPickerState(
+                                                        () => tempMinutes = v);
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 20),
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                setModalState(() {
+                                                  tempDuration = Duration(
+                                                      hours: tempHours,
+                                                      minutes: tempMinutes);
+                                                  formattedDuration =
+                                                      _formatDurationText(
+                                                          tempDuration);
+                                                });
+                                                Navigator.of(context).pop();
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: kDarkGreen,
+                                                foregroundColor: kCreme,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
+                                                ),
+                                              ),
+                                              child: const Text('Set Duration'),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: kLightGreen.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              formattedDuration,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: kDarkGreen,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final newText = textController.text.trim();
+                          if (newText.isEmpty) return;
+                          setState(() {
+                            _habitEntries[index] = entry.copyWith(
+                              habitText: newText,
+                              plannedDuration: tempDuration,
+                              durationText: formattedDuration,
+                            );
+                          });
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kDarkGreen,
+                          foregroundColor: kCreme,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 }
 

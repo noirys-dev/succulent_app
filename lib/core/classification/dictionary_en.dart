@@ -29,6 +29,9 @@ class DictionaryEn {
       "writing",
       "project",
       "task",
+      "painting",
+      "working on",
+      "working"
     ],
     CategoryId.physicalActivity: [
       "gym",
@@ -48,6 +51,8 @@ class DictionaryEn {
       "yoga",
       "pilates",
       "stretching",
+      "dance",
+      "dancing"
     ],
     CategoryId.chores: [
       "clean",
