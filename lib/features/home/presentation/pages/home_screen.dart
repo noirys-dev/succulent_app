@@ -19,29 +19,41 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final TextEditingController _habitController = TextEditingController();
   final FocusNode _habitFocusNode = FocusNode();
   String _submittedHabit = '';
   CategoryId? _suggestedCategory;
   CategoryId? _selectedCategory;
   final List<_HabitEntry> _habitEntries = [];
+  bool _isProgressBarVisible = false;
   String _selectedDuration = '1h 30m';
+
+  // Removed: _progressController, _progressAnimation, _currentProgressValue
+
+  // Premium iOS-like animation constants
+  static const Duration _kMotionDuration = Duration(milliseconds: 650);
+  static const Curve _kMotionCurve = Curves.easeOutQuart;
 
   @override
   void initState() {
     super.initState();
+    _isProgressBarVisible = _habitEntries.isNotEmpty;
     _habitFocusNode.addListener(() {
       if (!_habitFocusNode.hasFocus) {
         _updateSuggestedCategoryFromInput();
       }
     });
+    // Removed: _progressController/_progressAnimation init
   }
 
   @override
   void dispose() {
     _habitController.dispose();
     _habitFocusNode.dispose();
+    // Removed: _progressController.dispose();
     super.dispose();
   }
 
@@ -68,11 +80,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final int totalHabits = _habitEntries.length;
     final int completedHabits =
         _habitEntries.where((entry) => entry.isDone).length;
-    final double progressValue =
+    final double targetProgressValue =
         totalHabits == 0 ? 0.0 : completedHabits / totalHabits;
     final String completionPercentage =
-        (progressValue * 100).toStringAsFixed(0);
+        ((totalHabits == 0 ? 0.0 : completedHabits / totalHabits) * 100)
+            .toStringAsFixed(0);
     const double bottomPanelHeight = 220;
+
+    // Progress bar animation handled by TweenAnimationBuilder below.
 
     return Scaffold(
       backgroundColor: Color.lerp(Colors.white, kCreme, 0.2)!,
@@ -116,223 +131,95 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 28),
-                    if (totalHabits > 0) ...[
-                      Text(
-                        '$completedHabits / $totalHabits',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: kCharcoal.withOpacity(0.6),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                    ],
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: LinearProgressIndicator(
-                              value: progressValue,
-                              minHeight: 5,
-                              backgroundColor: kLightGreen.withOpacity(0.5),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                kDarkGreen,
-                              ),
+                    // Progress Section with Premium Animation
+                    AnimatedCrossFade(
+                      duration: _kMotionDuration,
+                      firstCurve: _kMotionCurve,
+                      secondCurve: _kMotionCurve,
+                      sizeCurve: _kMotionCurve,
+                      alignment: Alignment.topCenter,
+                      crossFadeState: _isProgressBarVisible
+                          ? CrossFadeState.showFirst
+                          : CrossFadeState.showSecond,
+                      firstChild: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$completedHabits / $totalHabits',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: kCharcoal.withOpacity(0.6),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '$completionPercentage%',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: kCharcoal,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_habitEntries.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      Column(
-                        children: _habitEntries.asMap().entries.map(
-                          (entryItem) {
-                            final index = entryItem.key;
-                            final entry = entryItem.value;
-
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _habitEntries[index] = entry.copyWith(
-                                    isDone: !entry.isDone,
-                                  );
-                                });
-                                HapticFeedback.lightImpact();
-                              },
-                              onLongPress: () {
-                                if (entry.isDone) return;
-                                HapticFeedback.mediumImpact();
-                                _openEditHabitSheet(index);
-                              },
-                              child: Opacity(
-                                opacity: entry.isDone ? 0.6 : 1.0,
-                                child: Container(
-                                  width: double.infinity,
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: kLightGreen.withOpacity(0.45),
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: kDarkGreen.withOpacity(0.85),
-                                    ),
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            entry.habitText,
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w600,
-                                              color: kCharcoal,
-                                              decoration: entry.isDone
-                                                  ? TextDecoration.lineThrough
-                                                  : TextDecoration.none,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Row(
-                                            children: [
-                                              Text(
-                                                entry.durationText,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: kCharcoal
-                                                      .withOpacity(0.8),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Text(
-                                                entry.categoryLabel,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: kCharcoal
-                                                      .withOpacity(0.8),
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      if (entry.categoryLabel ==
-                                              'Productivity' &&
-                                          !entry.isDone)
-                                        Positioned(
-                                          right: 0,
-                                          top: 0,
-                                          bottom: 0,
-                                          child: Center(
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              child: InkWell(
-                                                borderRadius:
-                                                    BorderRadius.circular(18),
-                                                onTap: () async {
-                                                  final result =
-                                                      await Navigator.of(
-                                                              context)
-                                                          .push(
-                                                    MaterialPageRoute(
-                                                      builder: (_) =>
-                                                          FocusScreen(
-                                                        taskTitle:
-                                                            entry.habitText,
-                                                        plannedDuration:
-                                                            _parseDuration(entry
-                                                                    .durationText) ??
-                                                                entry
-                                                                    .plannedDuration,
-                                                        taskIndex: index,
-                                                      ),
-                                                    ),
-                                                  );
-
-                                                  if (result != null &&
-                                                      result['completed'] ==
-                                                          true) {
-                                                    final int completedIndex =
-                                                        result['taskIndex']
-                                                            as int;
-
-                                                    setState(() {
-                                                      final existing =
-                                                          _habitEntries[
-                                                              completedIndex];
-                                                      final Duration? updated =
-                                                          result['updatedDuration']
-                                                              as Duration?;
-
-                                                      _habitEntries[
-                                                              completedIndex] =
-                                                          existing.copyWith(
-                                                        isDone: true,
-                                                        plannedDuration: updated ??
-                                                            existing
-                                                                .plannedDuration,
-                                                        durationText: updated !=
-                                                                null
-                                                            ? _formatDurationText(
-                                                                updated)
-                                                            : existing
-                                                                .durationText,
-                                                      );
-                                                    });
-                                                  }
-                                                },
-                                                onLongPress: () {},
-                                                child: Container(
-                                                  width: 36,
-                                                  height: 36,
-                                                  decoration: BoxDecoration(
-                                                    color: kLightGreen
-                                                        .withOpacity(0.35),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            18),
-                                                    border: Border.all(
-                                                      color: kDarkGreen
-                                                          .withOpacity(0.9),
-                                                    ),
-                                                  ),
-                                                  child: const Center(
-                                                    child: Icon(
-                                                      Icons.play_arrow_rounded,
-                                                      size: 18,
-                                                      color: kDarkGreen,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: TweenAnimationBuilder<double>(
+                                    tween: Tween<double>(
+                                        begin: 0, end: targetProgressValue),
+                                    duration: _kMotionDuration,
+                                    curve: _kMotionCurve,
+                                    builder: (context, value, _) {
+                                      return LinearProgressIndicator(
+                                        value: value,
+                                        minHeight: 5,
+                                        backgroundColor:
+                                            kLightGreen.withOpacity(0.45),
+                                        valueColor:
+                                            const AlwaysStoppedAnimation<Color>(
+                                                kDarkGreen),
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
-                            );
-                          },
-                        ).toList(),
+                              const SizedBox(width: 12),
+                              Text(
+                                '$completionPercentage%',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: kCharcoal,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                        ],
                       ),
-                    ],
+                      secondChild: const SizedBox(width: double.infinity),
+                    ),
+                    AnimatedList(
+                      key: _listKey,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      initialItemCount: _habitEntries.length,
+                      itemBuilder: (context, index, animation) {
+                        final entry = _habitEntries[index];
+                        final curvedAnimation = CurvedAnimation(
+                          parent: animation,
+                          curve: _kMotionCurve,
+                        );
+                        // Refined Premium Animation:
+                        // Uses Scale instead of Slide to avoid clipping artifacts.
+                        // Aligns from top (-1.0) for a natural "roll down" effect.
+                        return SizeTransition(
+                          sizeFactor: curvedAnimation,
+                          axisAlignment: -1.0,
+                          child: FadeTransition(
+                            opacity: curvedAnimation,
+                            child: ScaleTransition(
+                              scale: Tween<double>(begin: 0.95, end: 1.0)
+                                  .animate(curvedAnimation),
+                              child: _buildHabitCard(entry, index),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -455,8 +342,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               _suggestedCategory ??
                               classifiedCategory;
 
+                          // Check if list is currently empty to stagger animation
+                          final bool isFirstItem = _habitEntries.isEmpty;
+
                           setState(() {
                             _submittedHabit = habitText;
+                            if (isFirstItem) _isProgressBarVisible = true;
                             _suggestedCategory = classifiedCategory;
                             _selectedCategory = null;
 
@@ -472,10 +363,31 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
 
+                            // If not first item, insert immediately
+                            if (!isFirstItem) {
+                              _listKey.currentState?.insertItem(
+                                0,
+                                duration: _kMotionDuration,
+                              );
+                            }
+
                             // Prepare for next entry
                             _suggestedCategory = null;
                             _selectedCategory = null;
                           });
+
+                          // If first item, delay slightly to let progress bar expand first
+                          if (isFirstItem) {
+                            Future.delayed(const Duration(milliseconds: 300),
+                                () {
+                              if (mounted) {
+                                _listKey.currentState?.insertItem(
+                                  0,
+                                  duration: _kMotionDuration,
+                                );
+                              }
+                            });
+                          }
 
                           debugPrint('Submitted habit: $habitText');
                           _habitController.clear();
@@ -706,9 +618,68 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: kDarkBrown,
                           tooltip: 'Delete',
                           onPressed: () {
+                            final removedEntry = _habitEntries[index];
+                            final bool isLastItem = _habitEntries.length == 1;
+
+                            // 1. Remove item visually with a "Swipe Left" style animation.
+                            _listKey.currentState?.removeItem(
+                              index,
+                              (context, animation) {
+                                // Phase 1: Slide out to left & Fade (First 60% of time)
+                                final slideAnimation = Tween<Offset>(
+                                  begin: const Offset(-1.0, 0.0),
+                                  end: Offset.zero,
+                                ).animate(CurvedAnimation(
+                                  parent: animation,
+                                  curve: const Interval(0.4, 1.0,
+                                      curve: Curves.easeOutCubic),
+                                ));
+
+                                final fadeAnimation = CurvedAnimation(
+                                  parent: animation,
+                                  curve: const Interval(0.4, 1.0,
+                                      curve: Curves.easeOut),
+                                );
+
+                                // Phase 2: Collapse height (Last 40% of time)
+                                final sizeAnimation = CurvedAnimation(
+                                  parent: animation,
+                                  curve: const Interval(0.0, 0.4,
+                                      curve: Curves.easeOut),
+                                );
+
+                                return SizeTransition(
+                                  sizeFactor: sizeAnimation,
+                                  axisAlignment: -1.0, // Collapse upwards
+                                  child: FadeTransition(
+                                    opacity: fadeAnimation,
+                                    child: SlideTransition(
+                                      position: slideAnimation,
+                                      child:
+                                          _buildHabitCard(removedEntry, index),
+                                    ),
+                                  ),
+                                );
+                              },
+                              duration: _kMotionDuration,
+                            );
+
+                            // 2. Update data immediately AFTER calling removeItem
                             setState(() {
                               _habitEntries.removeAt(index);
                             });
+
+                            if (isLastItem) {
+                              // Wait for the task removal animation to finish before hiding the progress bar.
+                              Future.delayed(_kMotionDuration, () {
+                                if (mounted && _habitEntries.isEmpty) {
+                                  setState(() {
+                                    _isProgressBarVisible = false;
+                                  });
+                                }
+                              });
+                            }
+
                             Navigator.of(context).pop();
                             HapticFeedback.lightImpact();
                           },
@@ -898,6 +869,149 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildHabitCard(_HabitEntry entry, int index) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _habitEntries[index] = entry.copyWith(
+            isDone: !entry.isDone,
+          );
+        });
+        HapticFeedback.lightImpact();
+      },
+      onLongPress: () {
+        if (entry.isDone) return;
+        HapticFeedback.mediumImpact();
+        _openEditHabitSheet(index);
+      },
+      child: Opacity(
+        opacity: entry.isDone ? 0.6 : 1.0,
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          decoration: BoxDecoration(
+            color: kLightGreen.withOpacity(0.45),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: kDarkGreen.withOpacity(0.85),
+            ),
+          ),
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.habitText,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: kCharcoal,
+                      decoration: entry.isDone
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        entry.durationText,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: kCharcoal.withOpacity(0.8),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        entry.categoryLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: kCharcoal.withOpacity(0.8),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              if (entry.categoryLabel == 'Productivity' && !entry.isDone)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () async {
+                          final result = await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => FocusScreen(
+                                taskTitle: entry.habitText,
+                                plannedDuration:
+                                    _parseDuration(entry.durationText) ??
+                                        entry.plannedDuration,
+                                taskIndex: index,
+                              ),
+                            ),
+                          );
+
+                          if (result != null && result['completed'] == true) {
+                            final int completedIndex =
+                                result['taskIndex'] as int;
+
+                            setState(() {
+                              final existing = _habitEntries[completedIndex];
+                              final Duration? updated =
+                                  result['updatedDuration'] as Duration?;
+
+                              _habitEntries[completedIndex] = existing.copyWith(
+                                isDone: true,
+                                plannedDuration:
+                                    updated ?? existing.plannedDuration,
+                                durationText: updated != null
+                                    ? _formatDurationText(updated)
+                                    : existing.durationText,
+                              );
+                            });
+                          }
+                        },
+                        onLongPress: () {},
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: kLightGreen.withOpacity(0.35),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: kDarkGreen.withOpacity(0.9),
+                            ),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.play_arrow_rounded,
+                              size: 18,
+                              color: kDarkGreen,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
