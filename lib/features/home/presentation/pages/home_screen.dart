@@ -104,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen>
                   children: [
                     Text(
                       'Today · ${_formatShortDate(DateTime.now())}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13,
                         color: kCharcoal,
                         letterSpacing: 0.2,
@@ -179,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen>
                               const SizedBox(width: 12),
                               Text(
                                 '$completionPercentage%',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: kCharcoal,
@@ -712,7 +712,7 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: kDarkGreen),
+                          borderSide: const BorderSide(color: kDarkGreen),
                         ),
                       ),
                     ),

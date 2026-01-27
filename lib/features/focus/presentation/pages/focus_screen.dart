@@ -55,18 +55,58 @@ class _FocusScreenState extends State<FocusScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _audioPlayer.stop();
     _audioPlayer.dispose();
     super.dispose();
   }
 
   Future<void> _playLofi() async {
     await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-    await _audioPlayer.setVolume(0.55);
+    await _audioPlayer.setVolume(0.0);
     await _audioPlayer.play(AssetSource('audio/lofi_focus.mp3'));
+
+    // Gentle fade-in for premium focus feel
+    const int steps = 6;
+    const Duration stepDuration = Duration(milliseconds: 120);
+    double volume = 0.0;
+    const double targetVolume = 0.55;
+
+    for (int i = 0; i < steps; i++) {
+      volume += targetVolume / steps;
+      await _audioPlayer.setVolume(volume.clamp(0.0, targetVolume));
+      await Future.delayed(stepDuration);
+    }
   }
 
-  Future<void> _stopLofi() async {
-    await _audioPlayer.stop();
+  Future<void> _fadeOutAndStopAudio() async {
+    try {
+      const int steps = 6;
+      const Duration stepDuration = Duration(milliseconds: 100);
+      double volume = 0.55;
+
+      for (int i = 0; i < steps; i++) {
+        volume -= 0.55 / steps;
+        await _audioPlayer.setVolume(volume.clamp(0.0, 1.0));
+        await Future.delayed(stepDuration);
+      }
+
+      await _audioPlayer.stop();
+      await _audioPlayer.setVolume(0.55); // reset for next play
+    } catch (_) {
+      // Fail silently — audio should never crash focus flow
+    }
+  }
+
+  Future<void> _playCompletionChime() async {
+    try {
+      final chimePlayer = AudioPlayer();
+      await chimePlayer.setVolume(0.8);
+      await chimePlayer.play(
+        AssetSource('audio/focus_complete_chime.mp3'),
+      );
+    } catch (_) {
+      // fail silently
+    }
   }
 
   void _startTimer() {
@@ -77,9 +117,10 @@ class _FocusScreenState extends State<FocusScreen> {
     setState(() {
       _isRunning = true;
     });
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (_remainingDuration.inSeconds <= 0) {
-        _stopTimer();
+        await _stopTimer();
+        await _playCompletionChime();
         setState(() {
           _isCompleted = true;
           _completionMessage = _pickCompletionMessage();
@@ -101,18 +142,18 @@ class _FocusScreenState extends State<FocusScreen> {
     return _completionMessages[idx];
   }
 
-  void _stopTimer() {
+  Future<void> _stopTimer() async {
     _timer?.cancel();
     _timer = null;
-    _stopLofi();
+    await _fadeOutAndStopAudio();
     setState(() {
       _isRunning = false;
     });
   }
 
-  void _finishSession() {
+  Future<void> _finishSession() async {
     _timer?.cancel();
-    _stopLofi();
+    await _fadeOutAndStopAudio();
     if (_isCompleted) {
       Navigator.of(context).pop({
         'updatedDuration': _sessionTargetDuration,
@@ -123,8 +164,8 @@ class _FocusScreenState extends State<FocusScreen> {
   }
 
   // FocusScreen returns updated duration to the caller (HomeScreen) when focus ends.
-  void _endFocus() {
-    _stopTimer();
+  Future<void> _endFocus() async {
+    await _stopTimer();
     debugPrint(
       'Focus ended: ${widget.taskTitle}, planned=$_originalDuration, remaining=$_remainingDuration, sound=$_sound',
     );
@@ -241,30 +282,30 @@ class _FocusScreenState extends State<FocusScreen> {
               const SizedBox(height: 8),
               _SoundOption(
                 label: 'Off',
-                onTap: () {
+                onTap: () async {
                   setState(() => _sound = 'Off');
                   if (_isRunning) {
-                    _stopLofi();
+                    await _fadeOutAndStopAudio();
                   }
                   Navigator.of(context).pop();
                 },
               ),
               _SoundOption(
                 label: 'Lofi',
-                onTap: () {
+                onTap: () async {
                   setState(() => _sound = 'Lofi');
                   if (_isRunning) {
-                    _playLofi();
+                    await _playLofi();
                   }
                   Navigator.of(context).pop();
                 },
               ),
               _SoundOption(
                 label: 'White Noise',
-                onTap: () {
+                onTap: () async {
                   setState(() => _sound = 'White Noise');
                   if (_isRunning) {
-                    _stopLofi();
+                    await _fadeOutAndStopAudio();
                   }
                   Navigator.of(context).pop();
                 },
@@ -339,9 +380,9 @@ class _FocusScreenState extends State<FocusScreen> {
     );
   }
 
-  void _showEndSessionDialog() {
+  void _showEndSessionDialog() async {
     final wasRunning = _isRunning;
-    _stopTimer();
+    await _stopTimer();
     // If already completed, offer to finish instead of end
     if (_isCompleted) {
       _showPlatformDialog(

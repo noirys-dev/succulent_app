@@ -84,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     shadows: [
                       Shadow(
                         color: Colors.black.withOpacity(0.2),
-                        offset: Offset(0, 3),
+                        offset: const Offset(0, 3),
                         blurRadius: 10,
                       ),
                     ],
@@ -99,14 +99,14 @@ class _SplashScreenState extends State<SplashScreen> {
                     shadows: [
                       Shadow(
                         color: Colors.black.withOpacity(0.15),
-                        offset: Offset(0, 3),
+                        offset: const Offset(0, 3),
                         blurRadius: 10,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 120),
-                CircularProgressIndicator(
+                const CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(darkGreen),
                 ),
               ],
