@@ -1,14 +1,16 @@
 # Succulent
 
-A modern, gamified habit tracker built with Flutter. The app currently includes
-custom UI for a splash screen and a sample home dashboard, plus a lightweight
-classification utility used in a debug screen.
+A calm, gamified habit tracker built with Flutter, focused on deep work, mindful routines, and growth through consistency. Succulent blends a minimal task system with focus sessions, progress tracking, and a zen visual language.
 
 ## Features
-- Splash screen with branded SVG assets
-- Home dashboard with daily progress and sample habits
-- Simple task and succulent domain models
-- Debug classification screen (for quick category checks)
+- Branded splash screen and calm, minimal UI
+- Home dashboard with daily progress and animated habit list
+- Habit entry with duration picker (hours/minutes wheel)
+- Automatic task categorization (e.g., Productivity, Physical Activity)
+- Deep Focus mode with countdown timer
+- Optional lofi / ambient audio during focus sessions
+- Session completion feedback with subtle sound cues
+- Gamified progress tied to habit completion
 
 ## Project Structure
 The app follows a clean architecture-inspired layout:
@@ -20,6 +22,8 @@ lib/
   debug/
   features/
     home/
+      presentation/
+    focus/
       presentation/
     splash/
       presentation/
@@ -45,10 +49,12 @@ flutter run
 - `assets/splash-icon.svg`
 - `assets/app-icon.svg`
 - `assets/fonts/Brawler-Regular.ttf`
+- `assets/audio/` (lofi tracks and focus sound effects)
 
 ## Notes
-- The debug classification screen is not wired into navigation by default.
-- Sample data in the home screen is hard-coded for now.
+- Focus mode is currently available for productivity habits only.
+- All data is stored locally for now (no backend).
+- UI and interactions are optimized primarily for iOS.
 
 ## License
 Private project (not published to pub.dev).
