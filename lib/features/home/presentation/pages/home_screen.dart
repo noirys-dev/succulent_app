@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:succulent_app/core/classification/category.dart';
@@ -29,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen>
   CategoryId? _selectedCategory;
   final List<_HabitEntry> _habitEntries = [];
   bool _isProgressBarVisible = false;
-  String _selectedDuration = '1h 30m';
+  String _selectedDuration = '0m';
 
   // Removed: _progressController, _progressAnimation, _currentProgressValue
 
@@ -300,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ],
                     ),
                     if (_suggestedCategory != null) ...[
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 4),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: GestureDetector(
@@ -478,70 +479,284 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _openDurationSheet() {
-    int tempHours = 0;
-    int tempMinutes = 30;
+    int selectedHours = 0;
+    int selectedMinutes = 0;
 
-    showModalBottomSheet<void>(
+    final PageController pageController = PageController();
+
+    // For wheel scroll controllers
+    final List<int> hoursList = [0, 1, 2];
+    final List<int> minutesList = [0, 10, 20, 30, 40, 50];
+    FixedExtentScrollController? hoursController;
+    FixedExtentScrollController? minutesController;
+
+    void applyDuration(int h, int m) {
+      final d = Duration(hours: h, minutes: m);
+      setState(() {
+        _selectedDuration = _formatDurationText(d);
+      });
+      Navigator.of(context).pop();
+    }
+
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: false,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            // Controllers must be rebuilt with correct initialItem on show
+            hoursController = FixedExtentScrollController(
+                initialItem: hoursList.indexOf(selectedHours));
+            minutesController = FixedExtentScrollController(
+                initialItem: minutesList.indexOf(0));
             return SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Duration',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _NumberPicker(
-                          value: tempHours,
-                          max: 12,
-                          label: 'h',
-                          onChanged: (v) {
-                            setModalState(() => tempHours = v);
-                          },
-                        ),
-                        const SizedBox(width: 16),
-                        _NumberPicker(
-                          value: tempMinutes,
-                          max: 59,
-                          label: 'm',
-                          onChanged: (v) {
-                            setModalState(() => tempMinutes = v);
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _selectedDuration = '${tempHours}h ${tempMinutes}m';
-                        });
-                        Navigator.of(context).pop();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kDarkGreen,
-                        foregroundColor: kCreme,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
+                child: SizedBox(
+                  height: 220,
+                  child: Column(
+                    children: [
+                      // Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          const Text(
+                            'Duration',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                applyDuration(selectedHours, selectedMinutes),
+                            child: const Text('Done'),
+                          ),
+                        ],
+                      ),
+
+                      Expanded(
+                        child: PageView(
+                          controller: pageController,
+                          children: [
+                            // PAGE 1 — Custom Duration (Wheel pickers)
+                            // --- WHEEL PICKER: NEW HORIZONTAL LAYOUT ---
+                            Center(
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                height: 118,
+                                decoration: BoxDecoration(
+                                  // Remove color for transparency
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.center,
+                                      child: Container(
+                                        height: 40,
+                                        width: 220,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.white.withOpacity(0.85),
+                                              Colors.white.withOpacity(0.65),
+                                            ],
+                                          ),
+                                          border: Border.all(
+                                            color: kDarkGreen.withOpacity(0.18),
+                                            width: 0.8,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.04),
+                                              blurRadius: 6,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        // HOURS WHEEL
+                                        SizedBox(
+                                          width: 36,
+                                          child:
+                                              ListWheelScrollView.useDelegate(
+                                            controller: hoursController,
+                                            itemExtent: 40,
+                                            physics:
+                                                const FixedExtentScrollPhysics(),
+                                            onSelectedItemChanged: (index) {
+                                              setModalState(() {
+                                                selectedHours =
+                                                    hoursList[index];
+                                              });
+                                            },
+                                            childDelegate:
+                                                ListWheelChildBuilderDelegate(
+                                              childCount: hoursList.length,
+                                              builder: (context, index) {
+                                                final h = hoursList[index];
+                                                final isSelected =
+                                                    selectedHours == h;
+                                                return Center(
+                                                  child: Text(
+                                                    '$h',
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          isSelected ? 20 : 14,
+                                                      fontWeight: isSelected
+                                                          ? FontWeight.w600
+                                                          : FontWeight.normal,
+                                                      color: isSelected
+                                                          ? kDarkGreen
+                                                          : kCharcoal
+                                                              .withOpacity(
+                                                                  0.45),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                        // CENTER 'hours' LABEL
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10),
+                                          child: const Center(
+                                            child: Text(
+                                              'hours',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: kCharcoal,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        // MINUTES WHEEL
+                                        SizedBox(
+                                          width: 56,
+                                          child:
+                                              ListWheelScrollView.useDelegate(
+                                            controller: minutesController,
+                                            itemExtent: 40,
+                                            physics:
+                                                const FixedExtentScrollPhysics(),
+                                            onSelectedItemChanged: (index) {
+                                              setModalState(() {
+                                                selectedMinutes =
+                                                    minutesList[index];
+                                              });
+                                            },
+                                            childDelegate:
+                                                ListWheelChildBuilderDelegate(
+                                              childCount: minutesList.length,
+                                              builder: (context, index) {
+                                                final m = minutesList[index];
+                                                final isSelected =
+                                                    selectedMinutes == m;
+                                                return Center(
+                                                  child: Text(
+                                                    '$m',
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          isSelected ? 20 : 14,
+                                                      fontWeight: isSelected
+                                                          ? FontWeight.w600
+                                                          : FontWeight.normal,
+                                                      color: isSelected
+                                                          ? kDarkGreen
+                                                          : kCharcoal
+                                                              .withOpacity(
+                                                                  0.45),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                        // 'mins' LABEL
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(left: 8),
+                                          child: Text(
+                                            'mins',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: kCharcoal,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // PAGE 2 — Pomodoro Presets
+                            SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Pomodoro',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: kCharcoal,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _PomodoroTile(
+                                    title: '25 / 5',
+                                    subtitle: 'Classic focus',
+                                    onTap: () => applyDuration(0, 25),
+                                  ),
+                                  _PomodoroTile(
+                                    title: '50 / 10',
+                                    subtitle: 'Deep focus',
+                                    onTap: () => applyDuration(0, 50),
+                                  ),
+                                  _PomodoroTile(
+                                    title: '90 / 15',
+                                    subtitle: 'Extended session',
+                                    onTap: () => applyDuration(1, 30),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: const Text('Set Duration'),
-                    ),
-                  ],
+
+                      const SizedBox(height: 4),
+
+                      // Removed: Swipe for Pomodoro presets hint
+                    ],
+                  ),
                 ),
               ),
             );
@@ -575,11 +790,17 @@ class _HomeScreenState extends State<HomeScreen>
     return '${m}m';
   }
 
+  Duration _clampDuration(Duration d) {
+    const maxDuration = Duration(hours: 2);
+    if (d > maxDuration) return maxDuration;
+    return d;
+  }
+
   void _openEditHabitSheet(int index) {
     final entry = _habitEntries[index];
     final TextEditingController textController =
         TextEditingController(text: entry.habitText);
-    Duration tempDuration = entry.plannedDuration;
+    Duration tempDuration = _clampDuration(entry.plannedDuration);
     String formattedDuration = _formatDurationText(tempDuration);
 
     showModalBottomSheet<void>(
@@ -724,85 +945,139 @@ class _HomeScreenState extends State<HomeScreen>
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: () async {
-                            int tempHours = tempDuration.inHours;
-                            int tempMinutes =
-                                tempDuration.inMinutes.remainder(60);
-                            await showModalBottomSheet<void>(
+                            Duration tempEditDuration = tempDuration;
+                            int tempEditHours =
+                                tempEditDuration.inHours.clamp(0, 2);
+                            int tempEditMinutes =
+                                tempEditDuration.inMinutes.remainder(60);
+                            await showCupertinoModalPopup<void>(
                               context: context,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(20)),
-                              ),
                               builder: (context) {
                                 return StatefulBuilder(
                                   builder: (context, setPickerState) {
                                     return SafeArea(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 16),
+                                        child: CupertinoPopupSurface(
+                                      isSurfacePainted: true,
+                                      child: Container(
+                                        height: 320,
+                                        color: CupertinoColors.systemBackground
+                                            .resolveFrom(context),
                                         child: Column(
-                                          mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Text(
-                                              'Duration',
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600),
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                _NumberPicker(
-                                                  value: tempHours,
-                                                  max: 12,
-                                                  label: 'h',
-                                                  onChanged: (v) {
-                                                    setPickerState(
-                                                        () => tempHours = v);
-                                                  },
-                                                ),
-                                                const SizedBox(width: 16),
-                                                _NumberPicker(
-                                                  value: tempMinutes,
-                                                  max: 59,
-                                                  label: 'm',
-                                                  onChanged: (v) {
-                                                    setPickerState(
-                                                        () => tempMinutes = v);
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 20),
-                                            ElevatedButton(
-                                              onPressed: () {
-                                                setModalState(() {
-                                                  tempDuration = Duration(
-                                                      hours: tempHours,
-                                                      minutes: tempMinutes);
-                                                  formattedDuration =
-                                                      _formatDurationText(
-                                                          tempDuration);
-                                                });
-                                                Navigator.of(context).pop();
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: kDarkGreen,
-                                                foregroundColor: kCreme,
-                                                elevation: 0,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(14),
-                                                ),
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 8),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  CupertinoButton(
+                                                    padding: EdgeInsets.zero,
+                                                    onPressed: () =>
+                                                        Navigator.of(context)
+                                                            .pop(),
+                                                    child: const Text('Cancel'),
+                                                  ),
+                                                  const Text(
+                                                    'Duration',
+                                                    style: TextStyle(
+                                                        color: kDarkGreen,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w600),
+                                                  ),
+                                                  CupertinoButton(
+                                                    padding: EdgeInsets.zero,
+                                                    onPressed: () {
+                                                      setModalState(() {
+                                                        tempDuration =
+                                                            _clampDuration(
+                                                                tempEditDuration);
+                                                        formattedDuration =
+                                                            _formatDurationText(
+                                                                tempDuration);
+                                                      });
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                    },
+                                                    child: const Text('Done'),
+                                                  ),
+                                                ],
                                               ),
-                                              child: const Text('Set Duration'),
+                                            ),
+                                            Expanded(
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  SizedBox(
+                                                    width: 72,
+                                                    child: CupertinoPicker(
+                                                      itemExtent: 36,
+                                                      scrollController:
+                                                          FixedExtentScrollController(
+                                                              initialItem:
+                                                                  tempEditHours),
+                                                      onSelectedItemChanged:
+                                                          (value) {
+                                                        setPickerState(() {
+                                                          tempEditHours = value;
+                                                          tempEditDuration = Duration(
+                                                              hours:
+                                                                  tempEditHours,
+                                                              minutes:
+                                                                  tempEditMinutes);
+                                                        });
+                                                      },
+                                                      children: const [
+                                                        Text('0'),
+                                                        Text('1'),
+                                                        Text('2'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  const Text('h'),
+                                                  const SizedBox(width: 16),
+                                                  SizedBox(
+                                                    width: 84,
+                                                    child: CupertinoPicker(
+                                                      itemExtent: 36,
+                                                      scrollController:
+                                                          FixedExtentScrollController(
+                                                              initialItem:
+                                                                  tempEditMinutes),
+                                                      onSelectedItemChanged:
+                                                          (value) {
+                                                        setPickerState(() {
+                                                          tempEditMinutes =
+                                                              value;
+                                                          tempEditDuration = Duration(
+                                                              hours:
+                                                                  tempEditHours,
+                                                              minutes:
+                                                                  tempEditMinutes);
+                                                        });
+                                                      },
+                                                      children: List.generate(
+                                                        60,
+                                                        (index) =>
+                                                            Text('$index'),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  const Text('mins'),
+                                                ],
+                                              ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                    );
+                                    ));
                                   },
                                 );
                               },
@@ -1016,40 +1291,6 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
-class _NumberPicker extends StatelessWidget {
-  final int value;
-  final int max;
-  final String label;
-  final ValueChanged<int> onChanged;
-
-  const _NumberPicker({
-    required this.value,
-    required this.max,
-    required this.label,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.keyboard_arrow_up),
-          onPressed: value < max ? () => onChanged(value + 1) : null,
-        ),
-        Text(
-          '$value$label',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        IconButton(
-          icon: const Icon(Icons.keyboard_arrow_down),
-          onPressed: value > 0 ? () => onChanged(value - 1) : null,
-        ),
-      ],
-    );
-  }
-}
-
 class _HabitEntry {
   final String habitText;
   final String durationText;
@@ -1078,6 +1319,64 @@ class _HabitEntry {
       categoryLabel: categoryLabel ?? this.categoryLabel,
       plannedDuration: plannedDuration ?? this.plannedDuration,
       isDone: isDone ?? this.isDone,
+    );
+  }
+}
+
+class _PomodoroTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _PomodoroTile({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: kLightGreen.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: kDarkGreen.withOpacity(0.8),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: kDarkGreen,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
