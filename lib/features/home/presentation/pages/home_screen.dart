@@ -26,6 +26,8 @@ class _HomeScreenState extends State<HomeScreen>
   final TextEditingController _habitController = TextEditingController();
   final FocusNode _habitFocusNode = FocusNode();
   String _submittedHabit = '';
+  // Placeholder for user name (Authentication to be added later)
+  final String _userName = 'Anita';
   CategoryId? _suggestedCategory;
   CategoryId? _selectedCategory;
   final List<_HabitEntry> _habitEntries = [];
@@ -103,13 +105,27 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Today · ${_formatShortDate(DateTime.now())}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: kCharcoal,
-                        letterSpacing: 0.2,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Hello, $_userName!',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: kDarkGreen,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Text(
+                          'Today · ${_formatShortDate(DateTime.now())}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: kCharcoal,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 32),
                     Center(
@@ -581,82 +597,85 @@ class _HomeScreenState extends State<HomeScreen>
                           child: viewMode == 0
                               // PAGE 1: Custom Wheel
                               ? Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  height: 140,
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      // Selection Highlight
-                                      Container(
-                                        height: 46,
-                                        margin: const EdgeInsets.symmetric(
-                                            horizontal: 16),
-                                        decoration: BoxDecoration(
-                                          color: kLightGreen.withOpacity(0.25),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      height: 140,
+                                      child: Stack(
+                                        alignment: Alignment.center,
                                         children: [
-                                          // Hours
-                                          _buildWheel(
-                                            controller: hoursController!,
-                                            items: hoursList,
-                                            selectedItem: selectedHours,
-                                            label: 'h',
-                                            onChanged: (val) => setModalState(
-                                                () => selectedHours = val),
+                                          // Selection Highlight
+                                          Container(
+                                            height: 46,
+                                            margin: const EdgeInsets.symmetric(
+                                                horizontal: 16),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  kLightGreen.withOpacity(0.25),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
                                           ),
-                                          const SizedBox(width: 24),
-                                          // Minutes
-                                          _buildWheel(
-                                            controller: minutesController!,
-                                            items: minutesList,
-                                            selectedItem: selectedMinutes,
-                                            label: 'm',
-                                            onChanged: (val) => setModalState(
-                                                () => selectedMinutes = val),
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              // Hours
+                                              _buildWheel(
+                                                controller: hoursController!,
+                                                items: hoursList,
+                                                selectedItem: selectedHours,
+                                                label: 'h',
+                                                onChanged: (val) =>
+                                                    setModalState(() =>
+                                                        selectedHours = val),
+                                              ),
+                                              const SizedBox(width: 24),
+                                              // Minutes
+                                              _buildWheel(
+                                                controller: minutesController!,
+                                                items: minutesList,
+                                                selectedItem: selectedMinutes,
+                                                label: 'm',
+                                                onChanged: (val) =>
+                                                    setModalState(() =>
+                                                        selectedMinutes = val),
+                                              ),
+                                            ],
                                           ),
                                         ],
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              // PAGE 2: Presets
+                              : SingleChildScrollView(
+                                  child: Column(
+                                    children: [
+                                      _PomodoroTile(
+                                        title: 'Classic Pomodoro',
+                                        duration: '25m',
+                                        breakTime: '5m break',
+                                        icon: Icons.timer_outlined,
+                                        onTap: () => applyDuration(0, 25),
+                                      ),
+                                      _PomodoroTile(
+                                        title: 'Deep Work',
+                                        duration: '50m',
+                                        breakTime: '10m break',
+                                        icon: Icons.psychology_outlined,
+                                        onTap: () => applyDuration(0, 50),
+                                      ),
+                                      _PomodoroTile(
+                                        title: 'Long Session',
+                                        duration: '90m',
+                                        breakTime: '15m break',
+                                        icon: Icons.coffee_outlined,
+                                        onTap: () => applyDuration(1, 30),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
-                              // PAGE 2: Presets
-                              : SingleChildScrollView(
-                              child: Column(
-                                children: [
-                                  _PomodoroTile(
-                                    title: 'Classic Pomodoro',
-                                    duration: '25m',
-                                    breakTime: '5m break',
-                                    icon: Icons.timer_outlined,
-                                    onTap: () => applyDuration(0, 25),
-                                  ),
-                                  _PomodoroTile(
-                                    title: 'Deep Work',
-                                    duration: '50m',
-                                    breakTime: '10m break',
-                                    icon: Icons.psychology_outlined,
-                                    onTap: () => applyDuration(0, 50),
-                                  ),
-                                  _PomodoroTile(
-                                    title: 'Long Session',
-                                    duration: '90m',
-                                    breakTime: '15m break',
-                                    icon: Icons.coffee_outlined,
-                                    onTap: () => applyDuration(1, 30),
-                                  ),
-                                ],
-                              ),
-                            ),
                         ),
                       ),
 
