@@ -179,6 +179,15 @@ class _FocusScreenState extends State<FocusScreen> {
     final hours = totalSeconds ~/ 3600;
     final minutes = (totalSeconds % 3600) ~/ 60;
     final seconds = totalSeconds % 60;
+
+    // If the planned duration the user entered on HomeScreen is less than 1 hour,
+    // show only mm:ss for a cleaner, simpler display.
+    if (widget.plannedDuration < const Duration(hours: 1)) {
+      final m = minutes.toString().padLeft(2, '0');
+      final s = seconds.toString().padLeft(2, '0');
+      return '$m:$s';
+    }
+
     final h = hours.toString().padLeft(2, '0');
     final m = minutes.toString().padLeft(2, '0');
     final s = seconds.toString().padLeft(2, '0');
@@ -432,13 +441,35 @@ class _FocusScreenState extends State<FocusScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    'Deep Focus Session',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: kCreme.withOpacity(0.8),
-                    ),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            Icons.chevron_left,
+                            size: 40,
+                            color: kCreme.withOpacity(0.9),
+                          ),
+                          onPressed: _showEndSessionDialog,
+                          tooltip: 'Back',
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Deep Focus Session',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: kCreme.withOpacity(0.8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 40),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   Expanded(
