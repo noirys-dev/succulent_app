@@ -23,9 +23,7 @@ class SucculentApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Brawler',
       ),
-      home: kShowClassificationTest
-          ? const ClassificationTestScreen()
-          : const SplashScreen(),
+      home: const SplashScreen(),
     );
   }
 }

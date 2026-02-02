@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui'; // BackdropFilter için gerekli
 import 'package:succulent_app/core/classification/category.dart';
 import 'package:succulent_app/core/classification/classifier.dart';
 import 'package:succulent_app/features/focus/presentation/pages/focus_screen.dart';
@@ -33,8 +34,9 @@ class _HomeScreenState extends State<HomeScreen>
   final List<_HabitEntry> _habitEntries = [];
   bool _isProgressBarVisible = false;
   String _selectedDuration = '20m';
-
-  // Removed: _progressController, _progressAnimation, _currentProgressValue
+  bool _isInputOpen = false;
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolled = false;
 
   // Premium iOS-like animation constants
   static const Duration _kMotionDuration = Duration(milliseconds: 650);
@@ -49,15 +51,26 @@ class _HomeScreenState extends State<HomeScreen>
         _updateSuggestedCategoryFromInput();
       }
     });
-    // Removed: _progressController/_progressAnimation init
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _habitController.dispose();
     _habitFocusNode.dispose();
-    // Removed: _progressController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients) {
+      final isScrolled = _scrollController.offset > 20;
+      if (isScrolled != _isScrolled) {
+        setState(() {
+          _isScrolled = isScrolled;
+        });
+      }
+    }
   }
 
   void _updateSuggestedCategoryFromInput() {
@@ -89,16 +102,24 @@ class _HomeScreenState extends State<HomeScreen>
         ((totalHabits == 0 ? 0.0 : completedHabits / totalHabits) * 100)
             .toStringAsFixed(0);
     const double bottomPanelHeight = 220;
-
-    // Progress bar animation handled by TweenAnimationBuilder below.
+    final Color backgroundColor = Color.lerp(Colors.white, kCreme, 0.2)!;
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      backgroundColor: Color.lerp(Colors.white, kCreme, 0.2)!,
-      body: SafeArea(
+      backgroundColor: backgroundColor,
+      body: GestureDetector(
+        onTap: () {
+          if (_isInputOpen) {
+            setState(() => _isInputOpen = false);
+            FocusScope.of(context).unfocus();
+          }
+        },
         child: Stack(
           children: [
-            Positioned.fill(
+            SafeArea(
+              bottom: false,
               child: SingleChildScrollView(
+                controller: _scrollController,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 20)
                         .copyWith(bottom: bottomPanelHeight + 24),
@@ -220,9 +241,6 @@ class _HomeScreenState extends State<HomeScreen>
                           parent: animation,
                           curve: _kMotionCurve,
                         );
-                        // Refined Premium Animation:
-                        // Uses Scale instead of Slide to avoid clipping artifacts.
-                        // Aligns from top (-1.0) for a natural "roll down" effect.
                         return SizeTransition(
                           sizeFactor: curvedAnimation,
                           axisAlignment: -1.0,
@@ -241,197 +259,321 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                decoration: BoxDecoration(
-                  color: Color.lerp(Colors.white, kCreme, 0.2)!,
-                  border: Border(
-                    top: BorderSide(color: kLightGreen.withOpacity(0.35)),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOutQuart,
+                padding: EdgeInsets.only(
+                    bottom:
+                        _isInputOpen || !_isScrolled ? 30 + bottomPadding : 0),
+                child: RepaintBoundary(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    curve:
+                        _isInputOpen ? Curves.easeOutBack : Curves.easeOutQuart,
+                    width: _isInputOpen
+                        ? MediaQuery.of(context).size.width - 32
+                        : (_isScrolled
+                            ? MediaQuery.of(context).size.width
+                            : 220),
+                    height: _isInputOpen
+                        ? (_suggestedCategory != null ? 220 : 180)
+                        : (_isScrolled ? 40 + bottomPadding : 60),
+                    decoration: BoxDecoration(
+                      color: _isInputOpen
+                          ? Color.lerp(Colors.white,
+                              const Color.fromARGB(0, 249, 238, 219), 0.2)!
+                          : kDarkGreen,
+                      borderRadius: _isInputOpen
+                          ? BorderRadius.circular(28)
+                          : (_isScrolled
+                              ? const BorderRadius.vertical(
+                                  top: Radius.circular(24))
+                              : BorderRadius.circular(40)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kDarkGreen.withOpacity(0.25),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.hardEdge,
+                    child: Stack(
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _habitController,
-                            focusNode: _habitFocusNode,
-                            maxLines: 1,
-                            decoration: InputDecoration(
-                              hintText: "What's your next move?",
-                              hintStyle:
-                                  TextStyle(color: kCharcoal.withOpacity(0.6)),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(
-                                    color: kLightGreen.withOpacity(0.6)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(
-                                    color: kLightGreen.withOpacity(0.6)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: kDarkGreen),
-                              ),
-                            ),
+                        // Navigator ikonları
+                        AnimatedOpacity(
+                          duration: const Duration(milliseconds: 200),
+                          opacity: _isInputOpen ? 0.0 : 1.0,
+                          curve: _isInputOpen
+                              ? const Interval(0.0, 0.2, curve: Curves.easeOut)
+                              : const Interval(0.7, 1.0, curve: Curves.easeIn),
+                          child: IgnorePointer(
+                            ignoring: _isInputOpen,
+                            child: _buildNavBarIcons(),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        OutlinedButton(
-                          onPressed: () {
-                            FocusScope.of(context).unfocus();
-                            _openDurationSheet();
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: kCharcoal,
-                            side:
-                                BorderSide(color: kLightGreen.withOpacity(0.6)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                          ),
-                          child: Text(
-                            _selectedDuration,
-                            style: const TextStyle(fontSize: 13),
+                        // Input panel
+                        AnimatedOpacity(
+                          duration: const Duration(milliseconds: 500),
+                          opacity: _isInputOpen ? 1.0 : 0.0,
+                          curve: _isInputOpen
+                              ? const Interval(0.6, 1.0, curve: Curves.easeIn)
+                              : const Interval(0.0, 0.2, curve: Curves.easeOut),
+                          child: IgnorePointer(
+                            ignoring: !_isInputOpen,
+                            child: _buildInputPanel(),
                           ),
                         ),
                       ],
                     ),
-                    if (_suggestedCategory != null) ...[
-                      const SizedBox(height: 4),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: GestureDetector(
-                          onTap: _openCategorySheet,
-                          child: Chip(
-                            label: Text(
-                              _categoryLabel(
-                                _selectedCategory ?? _suggestedCategory!,
-                              ),
-                            ),
-                            backgroundColor: kLightGreen.withOpacity(0.4),
-                            side: BorderSide(
-                              color: kDarkGreen.withOpacity(0.8),
-                            ),
-                            labelStyle: TextStyle(
-                              fontSize: 12,
-                              color: kDarkGreen.withOpacity(0.9),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          final habitText = _habitController.text.trim();
-                          if (habitText.isEmpty) return;
-
-                          final classifiedCategory =
-                              Classifier.classifyEn(habitText).category;
-                          final finalCategory = _selectedCategory ??
-                              _suggestedCategory ??
-                              classifiedCategory;
-
-                          // Check if list is currently empty to stagger animation
-                          final bool isFirstItem = _habitEntries.isEmpty;
-
-                          setState(() {
-                            _submittedHabit = habitText;
-                            if (isFirstItem) _isProgressBarVisible = true;
-                            _suggestedCategory = classifiedCategory;
-                            _selectedCategory = null;
-
-                            _habitEntries.insert(
-                              0,
-                              _HabitEntry(
-                                habitText: habitText,
-                                durationText: _selectedDuration,
-                                categoryLabel: _categoryLabel(finalCategory),
-                                plannedDuration:
-                                    _parseDuration(_selectedDuration) ??
-                                        const Duration(),
-                              ),
-                            );
-
-                            // If not first item, insert immediately
-                            if (!isFirstItem) {
-                              _listKey.currentState?.insertItem(
-                                0,
-                                duration: _kMotionDuration,
-                              );
-                            }
-
-                            // Prepare for next entry
-                            _suggestedCategory = null;
-                            _selectedCategory = null;
-                          });
-
-                          // If first item, delay slightly to let progress bar expand first
-                          if (isFirstItem) {
-                            Future.delayed(const Duration(milliseconds: 300),
-                                () {
-                              if (mounted) {
-                                _listKey.currentState?.insertItem(
-                                  0,
-                                  duration: _kMotionDuration,
-                                );
-                              }
-                            });
-                          }
-
-                          debugPrint('Submitted habit: $habitText');
-                          _habitController.clear();
-                          FocusScope.of(context).unfocus();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kDarkGreen,
-                          foregroundColor: kCreme,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          'Add Habit',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavBarIcons() {
+    final double otherIconSize = _isScrolled ? 34 : 28;
+
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      // Arka plan rengini kaldırdık çünkü artık ana container rengi var
+      color: Colors.transparent,
+      alignment: Alignment.center,
+      child: SizedBox(
+        height: 60,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              onPressed: () {},
+              icon:
+                  Icon(Icons.home_rounded, color: kCreme, size: otherIconSize),
+              tooltip: 'Home',
+            ),
+            GestureDetector(
+              onTap: () {
+                setState(() => _isInputOpen = true);
+                // Container açılması bitince focus iste
+                Future.delayed(const Duration(milliseconds: 550), () {
+                  if (mounted && _isInputOpen) {
+                    _habitFocusNode.requestFocus();
+                  }
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: kCreme,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
+                ),
+                child: const Icon(Icons.add, color: kDarkGreen, size: 28),
+              ),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.person_outline_rounded,
+                  color: kCreme, size: otherIconSize),
+              tooltip: 'Profile',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputPanel() {
+    return Container(
+      // Arka plan rengini kaldırdık çünkü artık ana container rengi var
+      color: Colors.transparent,
+      height: double.infinity,
+      width: double.infinity,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _habitController,
+                      focusNode: _habitFocusNode,
+                      maxLines: 1,
+                      decoration: InputDecoration(
+                        hintText: "What's your next move?",
+                        hintStyle: TextStyle(color: kCharcoal.withOpacity(0.6)),
+                        filled: true,
+                        fillColor: kCreme.withOpacity(0.3),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide:
+                              BorderSide(color: kLightGreen.withOpacity(0.6)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide:
+                              BorderSide(color: kLightGreen.withOpacity(0.6)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: kDarkGreen),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  OutlinedButton(
+                    onPressed: () {
+                      FocusScope.of(context).unfocus();
+                      _openDurationSheet();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: kCharcoal,
+                      side: BorderSide(color: kLightGreen.withOpacity(0.6)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: Text(
+                      _selectedDuration,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+              if (_suggestedCategory != null) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: _openCategorySheet,
+                    child: Chip(
+                      label: Text(
+                        _categoryLabel(
+                          _selectedCategory ?? _suggestedCategory!,
+                        ),
+                      ),
+                      backgroundColor: kLightGreen.withOpacity(0.4),
+                      side: BorderSide(
+                        color: kDarkGreen.withOpacity(0.8),
+                      ),
+                      labelStyle: TextStyle(
+                        fontSize: 12,
+                        color: kDarkGreen.withOpacity(0.9),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final habitText = _habitController.text.trim();
+                    if (habitText.isEmpty) return;
+
+                    final classifiedCategory =
+                        Classifier.classifyEn(habitText).category;
+                    final finalCategory = _selectedCategory ??
+                        _suggestedCategory ??
+                        classifiedCategory;
+
+                    final bool isFirstItem = _habitEntries.isEmpty;
+
+                    setState(() {
+                      _submittedHabit = habitText;
+                      if (isFirstItem) _isProgressBarVisible = true;
+                      _suggestedCategory = classifiedCategory;
+                      _selectedCategory = null;
+                      _isInputOpen = false;
+
+                      _habitEntries.insert(
+                        0,
+                        _HabitEntry(
+                          habitText: habitText,
+                          durationText: _selectedDuration,
+                          categoryLabel: _categoryLabel(finalCategory),
+                          plannedDuration: _parseDuration(_selectedDuration) ??
+                              const Duration(),
+                        ),
+                      );
+
+                      if (!isFirstItem) {
+                        _listKey.currentState?.insertItem(
+                          0,
+                          duration: _kMotionDuration,
+                        );
+                      }
+
+                      _suggestedCategory = null;
+                      _selectedCategory = null;
+                    });
+
+                    if (isFirstItem) {
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (mounted) {
+                          _listKey.currentState?.insertItem(
+                            0,
+                            duration: _kMotionDuration,
+                          );
+                        }
+                      });
+                    }
+
+                    debugPrint('Submitted habit: $habitText');
+                    _habitController.clear();
+                    FocusScope.of(context).unfocus();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kDarkGreen,
+                    foregroundColor: kCreme,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Add Habit',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -468,25 +610,50 @@ class _HomeScreenState extends State<HomeScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 8),
-              for (final category in kCategories)
-                ListTile(
-                  title: Text(
-                    category.label,
-                    style: const TextStyle(fontSize: 15),
-                  ),
-                  onTap: () {
-                    setState(() {
-                      _selectedCategory = category.id;
-                    });
-                    Navigator.of(context).pop();
-                  },
+              const Text(
+                'Select Category',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: kCharcoal,
                 ),
-              const SizedBox(height: 12),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: kCategories.map((category) {
+                  final isSelected =
+                      (_selectedCategory ?? _suggestedCategory) == category.id;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _selectedCategory = category.id);
+                      Navigator.pop(context);
+                    },
+                    child: Chip(
+                      label: Text(category.label),
+                      backgroundColor: isSelected
+                          ? kDarkGreen
+                          : kLightGreen.withOpacity(0.3),
+                      labelStyle: TextStyle(
+                        color: isSelected ? kCreme : kCharcoal,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      side: BorderSide(
+                        color: isSelected
+                            ? kDarkGreen
+                            : kLightGreen.withOpacity(0.6),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         );
@@ -495,843 +662,240 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _openDurationSheet() {
-    final d = _parseDuration(_selectedDuration) ?? const Duration(minutes: 20);
-    int selectedHours = d.inHours;
-    int selectedMinutes = d.inMinutes.remainder(60);
-
-    // For wheel scroll controllers
-    final List<int> hoursList = [0, 1, 2];
-    final List<int> minutesList = [0, 10, 20, 30, 40, 50];
-    FixedExtentScrollController? hoursController;
-    FixedExtentScrollController? minutesController;
-
-    void applyDuration(int h, int m) {
-      final d = Duration(hours: h, minutes: m);
-      setState(() {
-        _selectedDuration = _formatDurationText(d);
-      });
-      Navigator.of(context).pop();
-    }
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: false,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      backgroundColor: Colors.white,
-      builder: (context) {
-        // 0 = Custom, 1 = Presets
-        int viewMode = 1;
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            // Initialize controllers if null (only once per modal session effectively)
-            hoursController ??= FixedExtentScrollController(
-                initialItem: hoursList.indexOf(selectedHours));
-            minutesController ??= FixedExtentScrollController(
-                initialItem: minutesList.contains(selectedMinutes)
-                    ? minutesList.indexOf(selectedMinutes)
-                    : 0);
-
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                child: SizedBox(
-                  height: 320,
-                  child: Column(
-                    children: [
-                      // Handle Bar
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Custom Segmented Control
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: kCreme.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                            _buildSegmentButton(
-                              title: 'Custom',
-                              isActive: viewMode == 0,
-                              onTap: () => setModalState(() => viewMode = 0),
-                            ),
-                            _buildSegmentButton(
-                              title: 'Presets',
-                              isActive: viewMode == 1,
-                              onTap: () => setModalState(() => viewMode = 1),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Content Area
-                      Expanded(
-                        child: GestureDetector(
-                          onHorizontalDragEnd: (details) {
-                            final velocity = details.primaryVelocity ?? 0;
-                            if (velocity < 0) {
-                              // Swipe Left (Custom -> Presets)
-                              if (viewMode == 0)
-                                setModalState(() => viewMode = 1);
-                            } else if (velocity > 0) {
-                              // Swipe Right (Presets -> Custom)
-                              if (viewMode == 1)
-                                setModalState(() => viewMode = 0);
-                            }
-                          },
-                          behavior: HitTestBehavior.opaque,
-                          child: viewMode == 0
-                              // PAGE 1: Custom Wheel
-                              ? Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      height: 140,
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          // Selection Highlight
-                                          Container(
-                                            height: 46,
-                                            margin: const EdgeInsets.symmetric(
-                                                horizontal: 16),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  kLightGreen.withOpacity(0.25),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              // Hours
-                                              _buildWheel(
-                                                controller: hoursController!,
-                                                items: hoursList,
-                                                selectedItem: selectedHours,
-                                                label: 'h',
-                                                onChanged: (val) =>
-                                                    setModalState(() =>
-                                                        selectedHours = val),
-                                              ),
-                                              const SizedBox(width: 24),
-                                              // Minutes
-                                              _buildWheel(
-                                                controller: minutesController!,
-                                                items: minutesList,
-                                                selectedItem: selectedMinutes,
-                                                label: 'm',
-                                                onChanged: (val) =>
-                                                    setModalState(() =>
-                                                        selectedMinutes = val),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              // PAGE 2: Presets
-                              : SingleChildScrollView(
-                                  child: Column(
-                                    children: [
-                                      _PomodoroTile(
-                                        title: 'Classic Pomodoro',
-                                        duration: '25m',
-                                        breakTime: '5m break',
-                                        icon: Icons.timer_outlined,
-                                        onTap: () => applyDuration(0, 25),
-                                      ),
-                                      _PomodoroTile(
-                                        title: 'Deep Work',
-                                        duration: '50m',
-                                        breakTime: '10m break',
-                                        icon: Icons.psychology_outlined,
-                                        onTap: () => applyDuration(0, 50),
-                                      ),
-                                      _PomodoroTile(
-                                        title: 'Long Session',
-                                        duration: '90m',
-                                        breakTime: '15m break',
-                                        icon: Icons.coffee_outlined,
-                                        onTap: () => applyDuration(1, 30),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                        ),
-                      ),
-
-                      // Bottom Action Button (Only for Custom mode)
-                      if (viewMode == 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: ElevatedButton(
-                              onPressed: () =>
-                                  applyDuration(selectedHours, selectedMinutes),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: kDarkGreen,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: const Text(
-                                'Set Duration',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSegmentButton({
-    required String title,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    )
-                  ]
-                : [],
-          ),
-          child: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-              color: isActive ? kDarkGreen : kCharcoal.withOpacity(0.6),
-            ),
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWheel({
-    required FixedExtentScrollController controller,
-    required List<int> items,
-    required int selectedItem,
-    required String label,
-    required ValueChanged<int> onChanged,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 50,
-          child: ListWheelScrollView.useDelegate(
-            controller: controller,
-            itemExtent: 40,
-            perspective: 0.005,
-            diameterRatio: 1.2,
-            physics: const FixedExtentScrollPhysics(),
-            onSelectedItemChanged: (index) => onChanged(items[index]),
-            childDelegate: ListWheelChildBuilderDelegate(
-              childCount: items.length,
-              builder: (context, index) {
-                final val = items[index];
-                final isSelected = selectedItem == val;
-                return Center(
-                  child: AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
-                    style: TextStyle(
-                      fontSize: isSelected ? 24 : 18,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color:
-                          isSelected ? kDarkGreen : kCharcoal.withOpacity(0.3),
-                    ),
-                    child: Text('$val'),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: kCharcoal,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Duration? _parseDuration(String text) {
-    final hourMatch = RegExp(r'(\d+)\s*h').firstMatch(text);
-    final minuteMatch = RegExp(r'(\d+)\s*m').firstMatch(text);
-
-    final hours = hourMatch != null ? int.tryParse(hourMatch.group(1)!) : null;
-    final minutes =
-        minuteMatch != null ? int.tryParse(minuteMatch.group(1)!) : null;
-
-    if (hours == null && minutes == null) {
-      return null;
-    }
-
-    return Duration(hours: hours ?? 0, minutes: minutes ?? 0);
-  }
-
-  String _formatDurationText(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-
-    if (h > 0 && m > 0) return '${h}h ${m}m';
-    if (h > 0) return '${h}h';
-    return '${m}m';
-  }
-
-  Duration _clampDuration(Duration d) {
-    const maxDuration = Duration(hours: 2);
-    if (d > maxDuration) return maxDuration;
-    return d;
-  }
-
-  void _openEditHabitSheet(int index) {
-    final entry = _habitEntries[index];
-    final TextEditingController textController =
-        TextEditingController(text: entry.habitText);
-    Duration tempDuration = _clampDuration(entry.plannedDuration);
-    String formattedDuration = _formatDurationText(tempDuration);
-
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      isScrollControlled: true,
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 24,
-            right: 24,
-            top: 24,
-          ),
-          child: StatefulBuilder(
-            builder: (context, setModalState) {
-              return SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Edit Habit',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          color: kDarkBrown,
-                          tooltip: 'Delete',
-                          onPressed: () {
-                            final removedEntry = _habitEntries[index];
-                            final bool isLastItem = _habitEntries.length == 1;
-
-                            // 1. Remove item visually with a "Swipe Left" style animation.
-                            _listKey.currentState?.removeItem(
-                              index,
-                              (context, animation) {
-                                // Phase 1: Slide out to left & Fade (First 60% of time)
-                                final slideAnimation = Tween<Offset>(
-                                  begin: const Offset(-1.0, 0.0),
-                                  end: Offset.zero,
-                                ).animate(CurvedAnimation(
-                                  parent: animation,
-                                  curve: const Interval(0.4, 1.0,
-                                      curve: Curves.easeOutCubic),
-                                ));
-
-                                final fadeAnimation = CurvedAnimation(
-                                  parent: animation,
-                                  curve: const Interval(0.4, 1.0,
-                                      curve: Curves.easeOut),
-                                );
-
-                                // Phase 2: Collapse height (Last 40% of time)
-                                final sizeAnimation = CurvedAnimation(
-                                  parent: animation,
-                                  curve: const Interval(0.0, 0.4,
-                                      curve: Curves.easeOut),
-                                );
-
-                                return SizeTransition(
-                                  sizeFactor: sizeAnimation,
-                                  axisAlignment: -1.0, // Collapse upwards
-                                  child: FadeTransition(
-                                    opacity: fadeAnimation,
-                                    child: SlideTransition(
-                                      position: slideAnimation,
-                                      child:
-                                          _buildHabitCard(removedEntry, index),
-                                    ),
-                                  ),
-                                );
-                              },
-                              duration: _kMotionDuration,
-                            );
-
-                            // 2. Update data immediately AFTER calling removeItem
-                            setState(() {
-                              _habitEntries.removeAt(index);
-                            });
-
-                            if (isLastItem) {
-                              // Wait for the task removal animation to finish before hiding the progress bar.
-                              Future.delayed(_kMotionDuration, () {
-                                if (mounted && _habitEntries.isEmpty) {
-                                  setState(() {
-                                    _isProgressBarVisible = false;
-                                  });
-                                }
-                              });
-                            }
-
-                            Navigator.of(context).pop();
-                            HapticFeedback.lightImpact();
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    TextField(
-                      controller: textController,
-                      maxLines: 1,
-                      decoration: InputDecoration(
-                        hintText: "Edit habit",
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: kLightGreen.withOpacity(0.6),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: kLightGreen.withOpacity(0.6),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: kDarkGreen),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        const Icon(Icons.timer_outlined,
-                            size: 20, color: kDarkGreen),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () async {
-                            Duration tempEditDuration = tempDuration;
-                            int tempEditHours =
-                                tempEditDuration.inHours.clamp(0, 2);
-                            int tempEditMinutes =
-                                tempEditDuration.inMinutes.remainder(60);
-                            await showCupertinoModalPopup<void>(
-                              context: context,
-                              builder: (context) {
-                                return StatefulBuilder(
-                                  builder: (context, setPickerState) {
-                                    return SafeArea(
-                                        child: CupertinoPopupSurface(
-                                      isSurfacePainted: true,
-                                      child: Container(
-                                        height: 320,
-                                        color: CupertinoColors.systemBackground
-                                            .resolveFrom(context),
-                                        child: Column(
-                                          children: [
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 8),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  CupertinoButton(
-                                                    padding: EdgeInsets.zero,
-                                                    onPressed: () =>
-                                                        Navigator.of(context)
-                                                            .pop(),
-                                                    child: const Text('Cancel'),
-                                                  ),
-                                                  const Text(
-                                                    'Duration',
-                                                    style: TextStyle(
-                                                        color: kDarkGreen,
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w600),
-                                                  ),
-                                                  CupertinoButton(
-                                                    padding: EdgeInsets.zero,
-                                                    onPressed: () {
-                                                      setModalState(() {
-                                                        tempDuration =
-                                                            _clampDuration(
-                                                                tempEditDuration);
-                                                        formattedDuration =
-                                                            _formatDurationText(
-                                                                tempDuration);
-                                                      });
-                                                      Navigator.of(context)
-                                                          .pop();
-                                                    },
-                                                    child: const Text('Done'),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  SizedBox(
-                                                    width: 72,
-                                                    child: CupertinoPicker(
-                                                      itemExtent: 36,
-                                                      scrollController:
-                                                          FixedExtentScrollController(
-                                                              initialItem:
-                                                                  tempEditHours),
-                                                      onSelectedItemChanged:
-                                                          (value) {
-                                                        setPickerState(() {
-                                                          tempEditHours = value;
-                                                          tempEditDuration = Duration(
-                                                              hours:
-                                                                  tempEditHours,
-                                                              minutes:
-                                                                  tempEditMinutes);
-                                                        });
-                                                      },
-                                                      children: const [
-                                                        Text('0'),
-                                                        Text('1'),
-                                                        Text('2'),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  const Text('h'),
-                                                  const SizedBox(width: 16),
-                                                  SizedBox(
-                                                    width: 84,
-                                                    child: CupertinoPicker(
-                                                      itemExtent: 36,
-                                                      scrollController:
-                                                          FixedExtentScrollController(
-                                                              initialItem:
-                                                                  tempEditMinutes),
-                                                      onSelectedItemChanged:
-                                                          (value) {
-                                                        setPickerState(() {
-                                                          tempEditMinutes =
-                                                              value;
-                                                          tempEditDuration = Duration(
-                                                              hours:
-                                                                  tempEditHours,
-                                                              minutes:
-                                                                  tempEditMinutes);
-                                                        });
-                                                      },
-                                                      children: List.generate(
-                                                        60,
-                                                        (index) =>
-                                                            Text('$index'),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  const Text('mins'),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ));
-                                  },
-                                );
-                              },
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: kLightGreen.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              formattedDuration,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: kDarkGreen,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 28),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          final newText = textController.text.trim();
-                          if (newText.isEmpty) return;
-                          setState(() {
-                            _habitEntries[index] = entry.copyWith(
-                              habitText: newText,
-                              plannedDuration: tempDuration,
-                              durationText: formattedDuration,
-                            );
-                          });
-                          Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kDarkGreen,
-                          foregroundColor: kCreme,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          'Save Changes',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Select Duration',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: kCharcoal,
                 ),
-              );
-            },
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  '5m',
+                  '10m',
+                  '15m',
+                  '20m',
+                  '25m',
+                  '30m',
+                  '45m',
+                  '1h',
+                  '2h'
+                ].map((duration) {
+                  final isSelected = _selectedDuration == duration;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _selectedDuration = duration);
+                      Navigator.pop(context);
+                    },
+                    child: Chip(
+                      label: Text(duration),
+                      backgroundColor: isSelected
+                          ? kDarkGreen
+                          : kLightGreen.withOpacity(0.3),
+                      labelStyle: TextStyle(
+                        color: isSelected ? kCreme : kCharcoal,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      side: BorderSide(
+                        color: isSelected
+                            ? kDarkGreen
+                            : kLightGreen.withOpacity(0.6),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
         );
       },
     );
   }
 
+  Duration? _parseDuration(String durationText) {
+    final trimmed = durationText.trim().toLowerCase();
+    if (trimmed.endsWith('m')) {
+      final minutes = int.tryParse(trimmed.substring(0, trimmed.length - 1));
+      if (minutes != null) return Duration(minutes: minutes);
+    } else if (trimmed.endsWith('h')) {
+      final hours = int.tryParse(trimmed.substring(0, trimmed.length - 1));
+      if (hours != null) return Duration(hours: hours);
+    }
+    return null;
+  }
+
+  String _formatDurationText(Duration duration) {
+    if (duration.inHours > 0) {
+      return '${duration.inHours}h';
+    } else {
+      return '${duration.inMinutes}m';
+    }
+  }
+
   Widget _buildHabitCard(_HabitEntry entry, int index) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _habitEntries[index] = entry.copyWith(
-            isDone: !entry.isDone,
-          );
-        });
-        HapticFeedback.lightImpact();
-      },
-      onLongPress: () {
-        if (entry.isDone) return;
-        HapticFeedback.mediumImpact();
-        _openEditHabitSheet(index);
-      },
-      child: Opacity(
-        opacity: entry.isDone ? 0.6 : 1.0,
-        child: Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          decoration: BoxDecoration(
-            color: kLightGreen.withOpacity(0.45),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: kDarkGreen.withOpacity(0.85),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              final existing = _habitEntries[index];
+              _habitEntries[index] =
+                  existing.copyWith(isDone: !existing.isDone);
+            });
+            HapticFeedback.mediumImpact();
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color:
+                  entry.isDone ? kLightGreen.withOpacity(0.15) : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: entry.isDone
+                    ? kDarkGreen.withOpacity(0.4)
+                    : kLightGreen.withOpacity(0.5),
+                width: 1.5,
+              ),
+              boxShadow: entry.isDone
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: kDarkGreen.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
             ),
-          ),
-          child: Stack(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.habitText,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: kCharcoal,
-                      decoration: entry.isDone
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 40),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        entry.durationText,
+                        entry.habitText,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: kCharcoal.withOpacity(0.8),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: kCharcoal,
+                          decoration: entry.isDone
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        entry.categoryLabel,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: kCharcoal.withOpacity(0.8),
-                          fontWeight: FontWeight.w600,
-                        ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Text(
+                            entry.durationText,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: kCharcoal.withOpacity(0.8),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            entry.categoryLabel,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: kCharcoal.withOpacity(0.8),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-              if (entry.categoryLabel == 'Productivity' && !entry.isDone)
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: () async {
-                          final result = await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => FocusScreen(
-                                taskTitle: entry.habitText,
-                                plannedDuration:
-                                    _parseDuration(entry.durationText) ??
-                                        entry.plannedDuration,
-                                taskIndex: index,
+                ),
+                if (entry.categoryLabel == 'Productivity' && !entry.isDone)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () async {
+                            final result = await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => FocusScreen(
+                                  taskTitle: entry.habitText,
+                                  plannedDuration:
+                                      _parseDuration(entry.durationText) ??
+                                          entry.plannedDuration,
+                                  taskIndex: index,
+                                ),
+                              ),
+                            );
+
+                            if (result != null && result['completed'] == true) {
+                              final int completedIndex =
+                                  result['taskIndex'] as int;
+
+                              setState(() {
+                                final existing = _habitEntries[completedIndex];
+                                final Duration? updated =
+                                    result['updatedDuration'] as Duration?;
+
+                                _habitEntries[completedIndex] =
+                                    existing.copyWith(
+                                  isDone: true,
+                                  plannedDuration:
+                                      updated ?? existing.plannedDuration,
+                                  durationText: updated != null
+                                      ? _formatDurationText(updated)
+                                      : existing.durationText,
+                                );
+                              });
+                            }
+                          },
+                          onLongPress: () {},
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: kLightGreen.withOpacity(0.35),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: kDarkGreen.withOpacity(0.9),
                               ),
                             ),
-                          );
-
-                          if (result != null && result['completed'] == true) {
-                            final int completedIndex =
-                                result['taskIndex'] as int;
-
-                            setState(() {
-                              final existing = _habitEntries[completedIndex];
-                              final Duration? updated =
-                                  result['updatedDuration'] as Duration?;
-
-                              _habitEntries[completedIndex] = existing.copyWith(
-                                isDone: true,
-                                plannedDuration:
-                                    updated ?? existing.plannedDuration,
-                                durationText: updated != null
-                                    ? _formatDurationText(updated)
-                                    : existing.durationText,
-                              );
-                            });
-                          }
-                        },
-                        onLongPress: () {},
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: kLightGreen.withOpacity(0.35),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: kDarkGreen.withOpacity(0.9),
-                            ),
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.play_arrow_rounded,
-                              size: 18,
-                              color: kDarkGreen,
+                            child: const Center(
+                              child: Icon(
+                                Icons.play_arrow_rounded,
+                                size: 18,
+                                color: kDarkGreen,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
