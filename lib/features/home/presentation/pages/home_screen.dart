@@ -33,6 +33,9 @@ class _HomeScreenState extends State<HomeScreen>
   final List<_HabitEntry> _habitEntries = [];
   bool _isProgressBarVisible = false;
   String _selectedDuration = '20m';
+  bool _isInputOpen = false;
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolled = false;
 
   // Removed: _progressController, _progressAnimation, _currentProgressValue
 
@@ -49,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen>
         _updateSuggestedCategoryFromInput();
       }
     });
+    _scrollController.addListener(_onScroll);
     // Removed: _progressController/_progressAnimation init
   }
 
@@ -56,8 +60,20 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     _habitController.dispose();
     _habitFocusNode.dispose();
+    _scrollController.dispose();
     // Removed: _progressController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients) {
+      final isScrolled = _scrollController.offset > 20;
+      if (isScrolled != _isScrolled) {
+        setState(() {
+          _isScrolled = isScrolled;
+        });
+      }
+    }
   }
 
   void _updateSuggestedCategoryFromInput() {
@@ -88,17 +104,26 @@ class _HomeScreenState extends State<HomeScreen>
     final String completionPercentage =
         ((totalHabits == 0 ? 0.0 : completedHabits / totalHabits) * 100)
             .toStringAsFixed(0);
-    const double bottomPanelHeight = 220;
+    final double bottomPanelHeight = 220;
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
 
     // Progress bar animation handled by TweenAnimationBuilder below.
 
     return Scaffold(
       backgroundColor: Color.lerp(Colors.white, kCreme, 0.2)!,
-      body: SafeArea(
+      body: GestureDetector(
+        onTap: () {
+          if (_isInputOpen) {
+            setState(() => _isInputOpen = false);
+            FocusScope.of(context).unfocus();
+          }
+        },
         child: Stack(
           children: [
-            Positioned.fill(
+            SafeArea(
+              bottom: false,
               child: SingleChildScrollView(
+                controller: _scrollController,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 20)
                         .copyWith(bottom: bottomPanelHeight + 24),
@@ -241,193 +266,313 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                decoration: BoxDecoration(
-                  color: Color.lerp(Colors.white, kCreme, 0.2)!,
-                  border: Border(
-                    top: BorderSide(color: kLightGreen.withOpacity(0.35)),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOutQuart,
+                padding: EdgeInsets.only(
+                    bottom:
+                        _isInputOpen || !_isScrolled ? 30 + bottomPadding : 0),
+                child: RepaintBoundary(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    curve:
+                        _isInputOpen ? Curves.easeOutBack : Curves.easeOutQuart,
+                    width: _isInputOpen
+                        ? MediaQuery.of(context).size.width - 32
+                        : (_isScrolled
+                            ? MediaQuery.of(context).size.width
+                            : 220),
+                    height: _isInputOpen
+                        ? (_suggestedCategory != null ? 220 : 180)
+                        : (_isScrolled ? 60 + bottomPadding : 60),
+                    decoration: BoxDecoration(
+                      color: _isInputOpen
+                          ? Color.lerp(Colors.white,
+                              const Color.fromARGB(0, 249, 238, 219), 0.2)!
+                          : kDarkGreen,
+                      borderRadius: _isInputOpen
+                          ? BorderRadius.circular(28)
+                          : (_isScrolled
+                              ? const BorderRadius.vertical(
+                                  top: Radius.circular(24))
+                              : BorderRadius.circular(40)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kDarkGreen.withOpacity(0.25),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.hardEdge,
+                    child: Stack(
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _habitController,
-                            focusNode: _habitFocusNode,
-                            maxLines: 1,
-                            decoration: InputDecoration(
-                              hintText: "What's your next move?",
-                              hintStyle:
-                                  TextStyle(color: kCharcoal.withOpacity(0.6)),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(
-                                    color: kLightGreen.withOpacity(0.6)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(
-                                    color: kLightGreen.withOpacity(0.6)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: kDarkGreen),
-                              ),
-                            ),
+                        AnimatedOpacity(
+                          duration: const Duration(milliseconds: 200),
+                          opacity: _isInputOpen ? 0.0 : 1.0,
+                          curve: _isInputOpen
+                              ? const Interval(0.0, 0.2, curve: Curves.easeOut)
+                              : const Interval(0.7, 1.0, curve: Curves.easeIn),
+                          child: IgnorePointer(
+                            ignoring: _isInputOpen,
+                            child: _buildNavBarIcons(),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        OutlinedButton(
-                          onPressed: () {
-                            FocusScope.of(context).unfocus();
-                            _openDurationSheet();
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: kCharcoal,
-                            side:
-                                BorderSide(color: kLightGreen.withOpacity(0.6)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                          ),
-                          child: Text(
-                            _selectedDuration,
-                            style: const TextStyle(fontSize: 13),
+                        AnimatedOpacity(
+                          duration: const Duration(milliseconds: 500),
+                          opacity: _isInputOpen ? 1.0 : 0.0,
+                          curve: _isInputOpen
+                              ? const Interval(0.6, 1.0, curve: Curves.easeIn)
+                              : const Interval(0.0, 0.2, curve: Curves.easeOut),
+                          child: IgnorePointer(
+                            ignoring: !_isInputOpen,
+                            child: _buildInputPanel(),
                           ),
                         ),
                       ],
                     ),
-                    if (_suggestedCategory != null) ...[
-                      const SizedBox(height: 4),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: GestureDetector(
-                          onTap: _openCategorySheet,
-                          child: Chip(
-                            label: Text(
-                              _categoryLabel(
-                                _selectedCategory ?? _suggestedCategory!,
-                              ),
-                            ),
-                            backgroundColor: kLightGreen.withOpacity(0.4),
-                            side: BorderSide(
-                              color: kDarkGreen.withOpacity(0.8),
-                            ),
-                            labelStyle: TextStyle(
-                              fontSize: 12,
-                              color: kDarkGreen.withOpacity(0.9),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavBarIcons() {
+    final double otherIconSize = _isScrolled ? 34 : 28;
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.transparent,
+      alignment: Alignment.center,
+      child: SizedBox(
+        height: 60,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.grid_view_rounded,
+                  color: kCreme, size: otherIconSize),
+              tooltip: 'Garden',
+            ),
+            GestureDetector(
+              onTap: () {
+                setState(() => _isInputOpen = true);
+                Future.delayed(const Duration(milliseconds: 550), () {
+                  if (mounted && _isInputOpen) {
+                    _habitFocusNode.requestFocus();
+                  }
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: kCreme,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
+                ),
+                child: const Icon(Icons.add, color: kDarkGreen, size: 28),
+              ),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.bar_chart_rounded,
+                  color: kCreme, size: otherIconSize),
+              tooltip: 'Stats',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputPanel() {
+    return Container(
+      color: Colors.transparent,
+      height: double.infinity,
+      width: double.infinity,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _habitController,
+                    focusNode: _habitFocusNode,
+                    maxLines: 1,
+                    decoration: InputDecoration(
+                      hintText: "What's your next move?",
+                      hintStyle: TextStyle(color: kCharcoal.withOpacity(0.6)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
                       ),
-                    ],
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          final habitText = _habitController.text.trim();
-                          if (habitText.isEmpty) return;
-
-                          final classifiedCategory =
-                              Classifier.classifyEn(habitText).category;
-                          final finalCategory = _selectedCategory ??
-                              _suggestedCategory ??
-                              classifiedCategory;
-
-                          // Check if list is currently empty to stagger animation
-                          final bool isFirstItem = _habitEntries.isEmpty;
-
-                          setState(() {
-                            _submittedHabit = habitText;
-                            if (isFirstItem) _isProgressBarVisible = true;
-                            _suggestedCategory = classifiedCategory;
-                            _selectedCategory = null;
-
-                            _habitEntries.insert(
-                              0,
-                              _HabitEntry(
-                                habitText: habitText,
-                                durationText: _selectedDuration,
-                                categoryLabel: _categoryLabel(finalCategory),
-                                plannedDuration:
-                                    _parseDuration(_selectedDuration) ??
-                                        const Duration(),
-                              ),
-                            );
-
-                            // If not first item, insert immediately
-                            if (!isFirstItem) {
-                              _listKey.currentState?.insertItem(
-                                0,
-                                duration: _kMotionDuration,
-                              );
-                            }
-
-                            // Prepare for next entry
-                            _suggestedCategory = null;
-                            _selectedCategory = null;
-                          });
-
-                          // If first item, delay slightly to let progress bar expand first
-                          if (isFirstItem) {
-                            Future.delayed(const Duration(milliseconds: 300),
-                                () {
-                              if (mounted) {
-                                _listKey.currentState?.insertItem(
-                                  0,
-                                  duration: _kMotionDuration,
-                                );
-                              }
-                            });
-                          }
-
-                          debugPrint('Submitted habit: $habitText');
-                          _habitController.clear();
-                          FocusScope.of(context).unfocus();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kDarkGreen,
-                          foregroundColor: kCreme,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          'Add Habit',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide:
+                            BorderSide(color: kLightGreen.withOpacity(0.6)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide:
+                            BorderSide(color: kLightGreen.withOpacity(0.6)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: kDarkGreen),
                       ),
                     ),
-                  ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton(
+                  onPressed: () {
+                    FocusScope.of(context).unfocus();
+                    _openDurationSheet();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kCharcoal,
+                    side: BorderSide(color: kLightGreen.withOpacity(0.6)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: Text(
+                    _selectedDuration,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            if (_suggestedCategory != null) ...[
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: _openCategorySheet,
+                  child: Chip(
+                    label: Text(
+                      _categoryLabel(
+                        _selectedCategory ?? _suggestedCategory!,
+                      ),
+                    ),
+                    backgroundColor: kLightGreen.withOpacity(0.4),
+                    side: BorderSide(
+                      color: kDarkGreen.withOpacity(0.8),
+                    ),
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      color: kDarkGreen.withOpacity(0.9),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {
+                  final habitText = _habitController.text.trim();
+                  if (habitText.isEmpty) return;
+
+                  final classifiedCategory =
+                      Classifier.classifyEn(habitText).category;
+                  final finalCategory = _selectedCategory ??
+                      _suggestedCategory ??
+                      classifiedCategory;
+
+                  // Check if list is currently empty to stagger animation
+                  final bool isFirstItem = _habitEntries.isEmpty;
+
+                  setState(() {
+                    _submittedHabit = habitText;
+                    if (isFirstItem) _isProgressBarVisible = true;
+                    _suggestedCategory = classifiedCategory;
+                    _selectedCategory = null;
+                    _isInputOpen = false;
+
+                    _habitEntries.insert(
+                      0,
+                      _HabitEntry(
+                        habitText: habitText,
+                        durationText: _selectedDuration,
+                        categoryLabel: _categoryLabel(finalCategory),
+                        plannedDuration: _parseDuration(_selectedDuration) ??
+                            const Duration(),
+                      ),
+                    );
+
+                    // If not first item, insert immediately
+                    if (!isFirstItem) {
+                      _listKey.currentState?.insertItem(
+                        0,
+                        duration: _kMotionDuration,
+                      );
+                    }
+
+                    // Prepare for next entry
+                    _suggestedCategory = null;
+                    _selectedCategory = null;
+                  });
+
+                  // If first item, delay slightly to let progress bar expand first
+                  if (isFirstItem) {
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      if (mounted) {
+                        _listKey.currentState?.insertItem(
+                          0,
+                          duration: _kMotionDuration,
+                        );
+                      }
+                    });
+                  }
+
+                  debugPrint('Submitted habit: $habitText');
+                  _habitController.clear();
+                  FocusScope.of(context).unfocus();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kDarkGreen,
+                  foregroundColor: kCreme,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'Add Habit',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
