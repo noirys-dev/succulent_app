@@ -4,6 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:succulent_app/core/classification/category.dart';
 import 'package:succulent_app/core/classification/classifier.dart';
 import 'package:succulent_app/features/focus/presentation/pages/focus_screen.dart';
+import 'package:succulent_app/features/home/domain/entities/habit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:succulent_app/core/di/injection.dart' as di;
+import 'package:succulent_app/features/home/presentation/bloc/home_bloc.dart';
+import 'package:succulent_app/features/home/presentation/bloc/home_event.dart';
+import 'package:succulent_app/features/home/presentation/bloc/home_state.dart';
 
 // Brand color palette
 const Color kDarkBrown = Color(0xFFA76D5A);
@@ -28,10 +34,9 @@ class _HomeScreenState extends State<HomeScreen>
   String _submittedHabit = '';
   // Placeholder for user name (Authentication to be added later)
   final String _userName = 'Anita';
-  CategoryId? _suggestedCategory;
-  CategoryId? _selectedCategory;
-  final List<_HabitEntry> _habitEntries = [];
-  bool _isProgressBarVisible = false;
+
+  // Habit list now managed by Bloc: use currentState.habits inside the build BlocBuilder
+  // Progress visibility derived from bloc state currentState.habits.isNotEmpty
   String _selectedDuration = '20m';
   bool _isInputOpen = false;
   final ScrollController _scrollController = ScrollController();
@@ -46,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _isProgressBarVisible = _habitEntries.isNotEmpty;
+    // Progress visibility is derived from Bloc state (habits list) now.
     _habitFocusNode.addListener(() {
       if (!_habitFocusNode.hasFocus) {
         _updateSuggestedCategoryFromInput();
@@ -80,36 +85,40 @@ class _HomeScreenState extends State<HomeScreen>
     final text = _habitController.text.trim();
 
     if (text.isEmpty) {
-      setState(() {
-        _suggestedCategory = null;
-        _selectedCategory = null;
-      });
+      // Clear local UI selections (handled by bloc as well)
+      context.read<HomeBloc>().add(const SuggestCategoryEvent(''));
       return;
     }
 
-    final category = Classifier.classifyEn(text).category;
-
-    setState(() {
-      _suggestedCategory = category;
-    });
+    // Ask bloc to suggest category
+    context.read<HomeBloc>().add(SuggestCategoryEvent(text));
   }
+
+
 
   @override
   Widget build(BuildContext context) {
-    final int totalHabits = _habitEntries.length;
-    final int completedHabits =
-        _habitEntries.where((entry) => entry.isDone).length;
-    final double targetProgressValue =
-        totalHabits == 0 ? 0.0 : completedHabits / totalHabits;
-    final String completionPercentage =
-        ((totalHabits == 0 ? 0.0 : completedHabits / totalHabits) * 100)
-            .toStringAsFixed(0);
     final double bottomPanelHeight = 220;
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
 
     // Progress bar animation handled by TweenAnimationBuilder below.
 
-    return Scaffold(
+    return BlocProvider(
+      create: (_) => di.getIt<HomeBloc>()..add(const LoadHabits()),
+      child: BlocBuilder<HomeBloc, HomeState>(
+        builder: (context, state) {
+          final currentState = state;
+
+          final int totalHabits = currentState.habits.length;
+          final int completedHabits =
+              currentState.habits.where((entry) => entry.isDone).length;
+          final double targetProgressValue =
+              totalHabits == 0 ? 0.0 : completedHabits / totalHabits;
+          final String completionPercentage =
+              ((totalHabits == 0 ? 0.0 : completedHabits / totalHabits) * 100)
+                  .toStringAsFixed(0);
+
+          return Scaffold(
       backgroundColor: Color.lerp(Colors.white, kCreme, 0.2)!,
       body: GestureDetector(
         onTap: () {
@@ -180,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen>
                       secondCurve: _kMotionCurve,
                       sizeCurve: _kMotionCurve,
                       alignment: Alignment.topCenter,
-                      crossFadeState: _isProgressBarVisible
+                      crossFadeState: currentState.habits.isNotEmpty
                           ? CrossFadeState.showFirst
                           : CrossFadeState.showSecond,
                       firstChild: Column(
@@ -238,9 +247,9 @@ class _HomeScreenState extends State<HomeScreen>
                       key: _listKey,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      initialItemCount: _habitEntries.length,
+                      initialItemCount: currentState.habits.length,
                       itemBuilder: (context, index, animation) {
-                        final entry = _habitEntries[index];
+                        final habit = currentState.habits[index];
                         final curvedAnimation = CurvedAnimation(
                           parent: animation,
                           curve: _kMotionCurve,
@@ -256,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen>
                             child: ScaleTransition(
                               scale: Tween<double>(begin: 0.95, end: 1.0)
                                   .animate(curvedAnimation),
-                              child: _buildHabitCard(entry, index),
+                              child: _buildHabitCard(habit, index),
                             ),
                           ),
                         );
@@ -285,7 +294,7 @@ class _HomeScreenState extends State<HomeScreen>
                             ? MediaQuery.of(context).size.width
                             : 220),
                     height: _isInputOpen
-                        ? (_suggestedCategory != null ? 220 : 180)
+                        ? ((currentState.suggestedCategory != null || currentState.selectedCategory != null) ? 220 : 180)
                         : (_isScrolled ? 60 + bottomPadding : 60),
                     decoration: BoxDecoration(
                       color: _isInputOpen
@@ -328,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen>
                               : const Interval(0.0, 0.2, curve: Curves.easeOut),
                           child: IgnorePointer(
                             ignoring: !_isInputOpen,
-                            child: _buildInputPanel(),
+                            child: _buildInputPanel(currentState),
                           ),
                         ),
                       ],
@@ -398,7 +407,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildInputPanel() {
+  Widget _buildInputPanel(HomeState currentState) {
     return Container(
       color: Colors.transparent,
       height: double.infinity,
@@ -467,7 +476,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ],
             ),
-            if (_suggestedCategory != null) ...[
+            if ((currentState.suggestedCategory ?? currentState.selectedCategory) != null) ...[
               const SizedBox(height: 4),
               Align(
                 alignment: Alignment.centerLeft,
@@ -476,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen>
                   child: Chip(
                     label: Text(
                       _categoryLabel(
-                        _selectedCategory ?? _suggestedCategory!,
+                        currentState.selectedCategory ?? currentState.suggestedCategory!,
                       ),
                     ),
                     backgroundColor: kLightGreen.withOpacity(0.4),
@@ -505,55 +514,21 @@ class _HomeScreenState extends State<HomeScreen>
 
                   final classifiedCategory =
                       Classifier.classifyEn(habitText).category;
-                  final finalCategory = _selectedCategory ??
-                      _suggestedCategory ??
+                  final finalCategory = currentState.selectedCategory ??
+                      currentState.suggestedCategory ??
                       classifiedCategory;
 
-                  // Check if list is currently empty to stagger animation
-                  final bool isFirstItem = _habitEntries.isEmpty;
+                  // Dispatch add habit to bloc
+                  context.read<HomeBloc>().add(AddHabitEvent(
+                        title: habitText,
+                        duration: _parseDuration(_selectedDuration) ??
+                            const Duration(minutes: 20),
+                        category: finalCategory,
+                      ));
 
                   setState(() {
-                    _submittedHabit = habitText;
-                    if (isFirstItem) _isProgressBarVisible = true;
-                    _suggestedCategory = classifiedCategory;
-                    _selectedCategory = null;
                     _isInputOpen = false;
-
-                    _habitEntries.insert(
-                      0,
-                      _HabitEntry(
-                        habitText: habitText,
-                        durationText: _selectedDuration,
-                        categoryLabel: _categoryLabel(finalCategory),
-                        plannedDuration: _parseDuration(_selectedDuration) ??
-                            const Duration(),
-                      ),
-                    );
-
-                    // If not first item, insert immediately
-                    if (!isFirstItem) {
-                      _listKey.currentState?.insertItem(
-                        0,
-                        duration: _kMotionDuration,
-                      );
-                    }
-
-                    // Prepare for next entry
-                    _suggestedCategory = null;
-                    _selectedCategory = null;
                   });
-
-                  // If first item, delay slightly to let progress bar expand first
-                  if (isFirstItem) {
-                    Future.delayed(const Duration(milliseconds: 300), () {
-                      if (mounted) {
-                        _listKey.currentState?.insertItem(
-                          0,
-                          duration: _kMotionDuration,
-                        );
-                      }
-                    });
-                  }
 
                   debugPrint('Submitted habit: $habitText');
                   _habitController.clear();
@@ -578,6 +553,9 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
+      ),
+    );
+        },
       ),
     );
   }
@@ -625,9 +603,8 @@ class _HomeScreenState extends State<HomeScreen>
                     style: const TextStyle(fontSize: 15),
                   ),
                   onTap: () {
-                    setState(() {
-                      _selectedCategory = category.id;
-                    });
+                    // Update selection via bloc
+                    context.read<HomeBloc>().add(SelectCategoryEvent(category.id));
                     Navigator.of(context).pop();
                   },
                 ),
@@ -990,9 +967,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _openEditHabitSheet(int index) {
-    final entry = _habitEntries[index];
+    final entry = context.read<HomeBloc>().state.habits[index];
     final TextEditingController textController =
-        TextEditingController(text: entry.habitText);
+        TextEditingController(text: entry.title);
     Duration tempDuration = _clampDuration(entry.plannedDuration);
     String formattedDuration = _formatDurationText(tempDuration);
 
@@ -1032,67 +1009,10 @@ class _HomeScreenState extends State<HomeScreen>
                           color: kDarkBrown,
                           tooltip: 'Delete',
                           onPressed: () {
-                            final removedEntry = _habitEntries[index];
-                            final bool isLastItem = _habitEntries.length == 1;
+                            final removedEntry = context.read<HomeBloc>().state.habits[index];
 
-                            // 1. Remove item visually with a "Swipe Left" style animation.
-                            _listKey.currentState?.removeItem(
-                              index,
-                              (context, animation) {
-                                // Phase 1: Slide out to left & Fade (First 60% of time)
-                                final slideAnimation = Tween<Offset>(
-                                  begin: const Offset(-1.0, 0.0),
-                                  end: Offset.zero,
-                                ).animate(CurvedAnimation(
-                                  parent: animation,
-                                  curve: const Interval(0.4, 1.0,
-                                      curve: Curves.easeOutCubic),
-                                ));
-
-                                final fadeAnimation = CurvedAnimation(
-                                  parent: animation,
-                                  curve: const Interval(0.4, 1.0,
-                                      curve: Curves.easeOut),
-                                );
-
-                                // Phase 2: Collapse height (Last 40% of time)
-                                final sizeAnimation = CurvedAnimation(
-                                  parent: animation,
-                                  curve: const Interval(0.0, 0.4,
-                                      curve: Curves.easeOut),
-                                );
-
-                                return SizeTransition(
-                                  sizeFactor: sizeAnimation,
-                                  axisAlignment: -1.0, // Collapse upwards
-                                  child: FadeTransition(
-                                    opacity: fadeAnimation,
-                                    child: SlideTransition(
-                                      position: slideAnimation,
-                                      child:
-                                          _buildHabitCard(removedEntry, index),
-                                    ),
-                                  ),
-                                );
-                              },
-                              duration: _kMotionDuration,
-                            );
-
-                            // 2. Update data immediately AFTER calling removeItem
-                            setState(() {
-                              _habitEntries.removeAt(index);
-                            });
-
-                            if (isLastItem) {
-                              // Wait for the task removal animation to finish before hiding the progress bar.
-                              Future.delayed(_kMotionDuration, () {
-                                if (mounted && _habitEntries.isEmpty) {
-                                  setState(() {
-                                    _isProgressBarVisible = false;
-                                  });
-                                }
-                              });
-                            }
+                            // Dispatch remove event to bloc
+                            context.read<HomeBloc>().add(RemoveHabitEvent(removedEntry.id));
 
                             Navigator.of(context).pop();
                             HapticFeedback.lightImpact();
@@ -1303,13 +1223,14 @@ class _HomeScreenState extends State<HomeScreen>
                         onPressed: () {
                           final newText = textController.text.trim();
                           if (newText.isEmpty) return;
-                          setState(() {
-                            _habitEntries[index] = entry.copyWith(
-                              habitText: newText,
-                              plannedDuration: tempDuration,
-                              durationText: formattedDuration,
-                            );
-                          });
+
+                          // Dispatch update via bloc
+                          context.read<HomeBloc>().add(UpdateHabitEvent(
+                                id: entry.id,
+                                title: newText,
+                                plannedDuration: tempDuration,
+                              ));
+
                           Navigator.of(context).pop();
                         },
                         style: ElevatedButton.styleFrom(
@@ -1340,14 +1261,11 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildHabitCard(_HabitEntry entry, int index) {
+  Widget _buildHabitCard(Habit entry, int index) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _habitEntries[index] = entry.copyWith(
-            isDone: !entry.isDone,
-          );
-        });
+        // Toggle done via bloc
+        context.read<HomeBloc>().add(ToggleHabitDoneEvent(entry.id));
         HapticFeedback.lightImpact();
       },
       onLongPress: () {
@@ -1377,7 +1295,7 @@ class _HomeScreenState extends State<HomeScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    entry.habitText,
+                    entry.title,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -1391,7 +1309,7 @@ class _HomeScreenState extends State<HomeScreen>
                   Row(
                     children: [
                       Text(
-                        entry.durationText,
+                        _formatDurationText(entry.plannedDuration),
                         style: TextStyle(
                           fontSize: 12,
                           color: kCharcoal.withOpacity(0.8),
@@ -1399,7 +1317,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        entry.categoryLabel,
+                        _categoryLabel(entry.category),
                         style: TextStyle(
                           fontSize: 12,
                           color: kCharcoal.withOpacity(0.8),
@@ -1410,7 +1328,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ],
               ),
-              if (entry.categoryLabel == 'Productivity' && !entry.isDone)
+              if (_categoryLabel(entry.category) == 'Productivity' && !entry.isDone)
                 Positioned(
                   right: 0,
                   top: 0,
@@ -1424,10 +1342,8 @@ class _HomeScreenState extends State<HomeScreen>
                           final result = await Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => FocusScreen(
-                                taskTitle: entry.habitText,
-                                plannedDuration:
-                                    _parseDuration(entry.durationText) ??
-                                        entry.plannedDuration,
+                                taskTitle: entry.title,
+                                plannedDuration: entry.plannedDuration,
                                 taskIndex: index,
                               ),
                             ),
@@ -1437,20 +1353,13 @@ class _HomeScreenState extends State<HomeScreen>
                             final int completedIndex =
                                 result['taskIndex'] as int;
 
-                            setState(() {
-                              final existing = _habitEntries[completedIndex];
-                              final Duration? updated =
-                                  result['updatedDuration'] as Duration?;
+                            final updated = result['updatedDuration'] as Duration?;
 
-                              _habitEntries[completedIndex] = existing.copyWith(
-                                isDone: true,
-                                plannedDuration:
-                                    updated ?? existing.plannedDuration,
-                                durationText: updated != null
-                                    ? _formatDurationText(updated)
-                                    : existing.durationText,
-                              );
-                            });
+                            // Update via bloc
+                            context.read<HomeBloc>().add(UpdateHabitEvent(
+                                  id: entry.id,
+                                  plannedDuration: updated,
+                                ));
                           }
                         },
                         onLongPress: () {},
@@ -1484,37 +1393,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
-class _HabitEntry {
-  final String habitText;
-  final String durationText;
-  final String categoryLabel;
-  final Duration plannedDuration;
-  final bool isDone;
-
-  const _HabitEntry({
-    required this.habitText,
-    required this.durationText,
-    required this.categoryLabel,
-    required this.plannedDuration,
-    this.isDone = false,
-  });
-
-  _HabitEntry copyWith({
-    String? habitText,
-    String? durationText,
-    String? categoryLabel,
-    Duration? plannedDuration,
-    bool? isDone,
-  }) {
-    return _HabitEntry(
-      habitText: habitText ?? this.habitText,
-      durationText: durationText ?? this.durationText,
-      categoryLabel: categoryLabel ?? this.categoryLabel,
-      plannedDuration: plannedDuration ?? this.plannedDuration,
-      isDone: isDone ?? this.isDone,
-    );
-  }
-}
+// Legacy _HabitEntry removed — now using domain `Habit` entity managed by HomeBloc.
 
 class _PomodoroTile extends StatelessWidget {
   final String title;

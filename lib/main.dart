@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:succulent_app/features/splash/presentation/pages/splash_screen.dart';
 import 'package:succulent_app/debug/classification_test_screen.dart';
+import 'package:succulent_app/core/di/injection.dart' as di;
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await di.init();
   runApp(const SucculentApp());
 }
 
