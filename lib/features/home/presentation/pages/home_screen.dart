@@ -96,6 +96,211 @@ class _HomeScreenState extends State<HomeScreen>
 
 
 
+  Widget _buildNavBarIcons() {
+    final double otherIconSize = _isScrolled ? 34 : 28;
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.transparent,
+      alignment: Alignment.center,
+      child: SizedBox(
+        height: 60,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.grid_view_rounded,
+                  color: kCreme, size: otherIconSize),
+              tooltip: 'Garden',
+            ),
+            GestureDetector(
+              onTap: () {
+                setState(() => _isInputOpen = true);
+                Future.delayed(const Duration(milliseconds: 550), () {
+                  if (mounted && _isInputOpen) {
+                    _habitFocusNode.requestFocus();
+                  }
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: kCreme,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
+                ),
+                child: const Icon(Icons.add, color: kDarkGreen, size: 28),
+              ),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.bar_chart_rounded,
+                  color: kCreme, size: otherIconSize),
+              tooltip: 'Stats',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputPanel(HomeState currentState) {
+    return Container(
+      color: Colors.transparent,
+      height: double.infinity,
+      width: double.infinity,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _habitController,
+                    focusNode: _habitFocusNode,
+                    maxLines: 1,
+                    decoration: InputDecoration(
+                      hintText: "What's your next move?",
+                      hintStyle: TextStyle(color: kCharcoal.withOpacity(0.6)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide:
+                            BorderSide(color: kLightGreen.withOpacity(0.6)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide:
+                            BorderSide(color: kLightGreen.withOpacity(0.6)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: kDarkGreen),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton(
+                  onPressed: () {
+                    FocusScope.of(context).unfocus();
+                    _openDurationSheet();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kCharcoal,
+                    side: BorderSide(color: kLightGreen.withOpacity(0.6)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: Text(
+                    _selectedDuration,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            if ((currentState.suggestedCategory ?? currentState.selectedCategory) != null) ...[
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: _openCategorySheet,
+                  child: Chip(
+                    label: Text(
+                      _categoryLabel(
+                        currentState.selectedCategory ?? currentState.suggestedCategory!,
+                      ),
+                    ),
+                    backgroundColor: kLightGreen.withOpacity(0.4),
+                    side: BorderSide(
+                      color: kDarkGreen.withOpacity(0.8),
+                    ),
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      color: kDarkGreen.withOpacity(0.9),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {
+                  final habitText = _habitController.text.trim();
+                  if (habitText.isEmpty) return;
+
+                  final classifiedCategory =
+                      Classifier.classifyEn(habitText).category;
+                  final finalCategory = currentState.selectedCategory ??
+                      currentState.suggestedCategory ??
+                      classifiedCategory;
+
+                  // Dispatch add habit to bloc
+                context.read<HomeBloc>().add(AddHabitEvent(
+                      title: habitText,
+                      duration: _parseDuration(_selectedDuration) ??
+                          const Duration(minutes: 20),
+                      category: finalCategory,
+                    ));
+
+                  setState(() {
+                    _isInputOpen = false;
+                  });
+
+                  debugPrint('Submitted habit: $habitText');
+                  _habitController.clear();
+                  FocusScope.of(context).unfocus();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kDarkGreen,
+                  foregroundColor: kCreme,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'Add Habit',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final double bottomPanelHeight = 220;
@@ -350,215 +555,11 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
     );
+  },
+  ),
+);
   }
 
-  Widget _buildNavBarIcons() {
-    final double otherIconSize = _isScrolled ? 34 : 28;
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: Colors.transparent,
-      alignment: Alignment.center,
-      child: SizedBox(
-        height: 60,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            IconButton(
-              onPressed: () {},
-              icon: Icon(Icons.grid_view_rounded,
-                  color: kCreme, size: otherIconSize),
-              tooltip: 'Garden',
-            ),
-            GestureDetector(
-              onTap: () {
-                setState(() => _isInputOpen = true);
-                Future.delayed(const Duration(milliseconds: 550), () {
-                  if (mounted && _isInputOpen) {
-                    _habitFocusNode.requestFocus();
-                  }
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: kCreme,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    )
-                  ],
-                ),
-                child: const Icon(Icons.add, color: kDarkGreen, size: 28),
-              ),
-            ),
-            IconButton(
-              onPressed: () {},
-              icon: Icon(Icons.bar_chart_rounded,
-                  color: kCreme, size: otherIconSize),
-              tooltip: 'Stats',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputPanel(HomeState currentState) {
-    return Container(
-      color: Colors.transparent,
-      height: double.infinity,
-      width: double.infinity,
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _habitController,
-                    focusNode: _habitFocusNode,
-                    maxLines: 1,
-                    decoration: InputDecoration(
-                      hintText: "What's your next move?",
-                      hintStyle: TextStyle(color: kCharcoal.withOpacity(0.6)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide:
-                            BorderSide(color: kLightGreen.withOpacity(0.6)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide:
-                            BorderSide(color: kLightGreen.withOpacity(0.6)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: kDarkGreen),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton(
-                  onPressed: () {
-                    FocusScope.of(context).unfocus();
-                    _openDurationSheet();
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: kCharcoal,
-                    side: BorderSide(color: kLightGreen.withOpacity(0.6)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: Text(
-                    _selectedDuration,
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-            if ((currentState.suggestedCategory ?? currentState.selectedCategory) != null) ...[
-              const SizedBox(height: 4),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: GestureDetector(
-                  onTap: _openCategorySheet,
-                  child: Chip(
-                    label: Text(
-                      _categoryLabel(
-                        currentState.selectedCategory ?? currentState.suggestedCategory!,
-                      ),
-                    ),
-                    backgroundColor: kLightGreen.withOpacity(0.4),
-                    side: BorderSide(
-                      color: kDarkGreen.withOpacity(0.8),
-                    ),
-                    labelStyle: TextStyle(
-                      fontSize: 12,
-                      color: kDarkGreen.withOpacity(0.9),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () {
-                  final habitText = _habitController.text.trim();
-                  if (habitText.isEmpty) return;
-
-                  final classifiedCategory =
-                      Classifier.classifyEn(habitText).category;
-                  final finalCategory = currentState.selectedCategory ??
-                      currentState.suggestedCategory ??
-                      classifiedCategory;
-
-                  // Dispatch add habit to bloc
-                  context.read<HomeBloc>().add(AddHabitEvent(
-                        title: habitText,
-                        duration: _parseDuration(_selectedDuration) ??
-                            const Duration(minutes: 20),
-                        category: finalCategory,
-                      ));
-
-                  setState(() {
-                    _isInputOpen = false;
-                  });
-
-                  debugPrint('Submitted habit: $habitText');
-                  _habitController.clear();
-                  FocusScope.of(context).unfocus();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kDarkGreen,
-                  foregroundColor: kCreme,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
-                  'Add Habit',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-        },
-      ),
-    );
-  }
 
   String _formatShortDate(DateTime date) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
