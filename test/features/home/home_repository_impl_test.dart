@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:succulent_app/features/home/data/home_repository_impl.dart';
-import 'package:succulent_app/features/home/domain/entities/habit.dart';
+import 'package:succulent_app/features/home/data/models/habit_model.dart';
 import 'package:succulent_app/core/classification/category.dart';
 
 void main() {
@@ -17,7 +17,7 @@ void main() {
     });
 
     test('addHabit adds an item and assigns an id when empty', () async {
-      final habit = Habit(
+      final habit = HabitModel(
         id: '',
         title: 'Test Habit',
         plannedDuration: const Duration(minutes: 20),
@@ -32,7 +32,7 @@ void main() {
     });
 
     test('updateHabit updates existing item', () async {
-      final habit = Habit(
+      final habit = HabitModel(
         id: '',
         title: 'To Update',
         plannedDuration: const Duration(minutes: 15),
@@ -43,7 +43,8 @@ void main() {
       var items = await repository.getHabits();
       final added = items.first;
 
-      final updated = added.copyWith(title: 'Updated', plannedDuration: const Duration(minutes: 25));
+      final updated = added.copyWith(
+          title: 'Updated', plannedDuration: const Duration(minutes: 25));
       await repository.updateHabit(updated);
 
       items = await repository.getHabits();
@@ -52,7 +53,7 @@ void main() {
     });
 
     test('removeHabit removes an item', () async {
-      final habit = Habit(
+      final habit = HabitModel(
         id: '',
         title: 'To Remove',
         plannedDuration: const Duration(minutes: 10),

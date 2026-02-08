@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:succulent_app/features/splash/presentation/pages/splash_screen.dart';
-import 'package:succulent_app/debug/classification_test_screen.dart';
 import 'package:succulent_app/core/di/injection.dart' as di;
+import 'package:succulent_app/features/splash/presentation/pages/splash_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:succulent_app/features/home/presentation/bloc/home_bloc.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final storage = await HydratedStorage.build(
+    storageDirectory: await getApplicationDocumentsDirectory(),
+  );
+  HydratedBloc.storage = storage;
   await di.init();
   runApp(const SucculentApp());
 }
@@ -18,15 +25,17 @@ class SucculentApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // Toggle this flag to open the classification test screen
 
-    return MaterialApp(
-      title: 'Succulent',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        useMaterial3: true,
-        fontFamily: 'Brawler',
-      ),
-      home: const SplashScreen(),
-    );
+    return BlocProvider(
+        create: (_) => di.getIt<HomeBloc>(),
+        child: MaterialApp(
+          title: 'Succulent',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+            useMaterial3: true,
+            fontFamily: 'Brawler',
+          ),
+          home: const SplashScreen(),
+        ));
   }
 }

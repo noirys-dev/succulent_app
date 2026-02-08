@@ -4,7 +4,6 @@ import 'package:succulent_app/features/home/presentation/bloc/home_bloc.dart';
 import 'package:succulent_app/features/home/presentation/bloc/home_event.dart';
 import 'package:succulent_app/features/home/presentation/bloc/home_state.dart';
 import 'package:succulent_app/features/home/data/home_repository_impl.dart';
-import 'package:succulent_app/features/home/domain/entities/habit.dart';
 import 'package:succulent_app/core/classification/category.dart';
 
 void main() {
@@ -67,8 +66,12 @@ void main() {
     blocTest<HomeBloc, HomeState>(
       'suggests a category',
       build: () => bloc,
-      act: (bloc) => bloc.add(const SuggestCategoryEvent('run')), // classifier returns some category
-      expect: () => [isA<HomeState>().having((s) => s.suggestedCategory, 'suggested', isNotNull)],
+      act: (bloc) => bloc.add(const SuggestCategoryEvent(
+          'run')), // classifier returns some category
+      expect: () => [
+        isA<HomeState>()
+            .having((s) => s.suggestedCategory, 'suggested', isNotNull)
+      ],
     );
   });
 }

@@ -1,8 +1,8 @@
-import 'package:succulent_app/features/home/domain/entities/habit.dart';
+import 'package:succulent_app/features/home/data/models/habit_model.dart';
 
 abstract class HomeRepository {
-  Future<List<Habit>> getHabits();
-  Future<void> addHabit(Habit habit);
-  Future<void> updateHabit(Habit habit);
+  Future<List<HabitModel>> getHabits();
+  Future<void> addHabit(HabitModel habit);
+  Future<void> updateHabit(HabitModel habit);
   Future<void> removeHabit(String id);
 }

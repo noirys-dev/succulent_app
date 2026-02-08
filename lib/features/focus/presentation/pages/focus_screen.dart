@@ -4,11 +4,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:audioplayers/audioplayers.dart';
-
-// Brand color palette (mirrors HomeScreen)
-const Color kDarkGreen = Color(0xFF76966B);
-const Color kCreme = Color(0xFFF9EEDB);
-const Color kCharcoal = Color(0xFF636262);
+import 'package:succulent_app/core/theme/app_colors.dart';
 
 class FocusScreen extends StatefulWidget {
   final String taskTitle;
@@ -218,7 +214,7 @@ class _FocusScreenState extends State<FocusScreen> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: kCharcoal,
+                        color: AppColors.charcoal,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -258,8 +254,8 @@ class _FocusScreenState extends State<FocusScreen> {
                         Navigator.of(context).pop();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: kDarkGreen,
-                        foregroundColor: kCreme,
+                        backgroundColor: AppColors.darkGreen,
+                        foregroundColor: AppColors.creme,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -434,7 +430,7 @@ class _FocusScreenState extends State<FocusScreen> {
           }
         },
         child: Scaffold(
-          backgroundColor: kDarkGreen,
+          backgroundColor: AppColors.darkGreen,
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -451,7 +447,7 @@ class _FocusScreenState extends State<FocusScreen> {
                           icon: Icon(
                             Icons.chevron_left,
                             size: 40,
-                            color: kCreme.withOpacity(0.9),
+                            color: AppColors.creme.withOpacity(0.9),
                           ),
                           onPressed: _showEndSessionDialog,
                           tooltip: 'Back',
@@ -464,7 +460,7 @@ class _FocusScreenState extends State<FocusScreen> {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
-                            color: kCreme.withOpacity(0.8),
+                            color: AppColors.creme.withOpacity(0.8),
                           ),
                         ),
                       ),
@@ -482,7 +478,7 @@ class _FocusScreenState extends State<FocusScreen> {
                           'Currently working on:',
                           style: TextStyle(
                             fontSize: 13,
-                            color: kCreme.withOpacity(0.7),
+                            color: AppColors.creme.withOpacity(0.7),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -492,7 +488,7 @@ class _FocusScreenState extends State<FocusScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: kCreme.withOpacity(0.9),
+                            color: AppColors.creme.withOpacity(0.9),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -501,7 +497,7 @@ class _FocusScreenState extends State<FocusScreen> {
                           width: 120,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: kCreme.withOpacity(0.08),
+                            color: AppColors.creme.withOpacity(0.08),
                           ),
                         ),
                         if (_isCompleted && _completionMessage != null) ...[
@@ -512,7 +508,7 @@ class _FocusScreenState extends State<FocusScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: kCreme.withOpacity(0.75),
+                              color: AppColors.creme.withOpacity(0.75),
                             ),
                           ),
                         ],
@@ -523,10 +519,10 @@ class _FocusScreenState extends State<FocusScreen> {
                     onTap: _openDurationSheet,
                     child: Text(
                       _formatDuration(_remainingDuration),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 44,
                         fontWeight: FontWeight.w600,
-                        color: kCreme,
+                        color: AppColors.creme,
                         letterSpacing: 1.5,
                       ),
                     ),
@@ -553,8 +549,8 @@ class _FocusScreenState extends State<FocusScreen> {
                             child: ElevatedButton(
                               onPressed: _finishSession,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: kCreme,
-                                foregroundColor: kDarkGreen,
+                                backgroundColor: AppColors.creme,
+                                foregroundColor: AppColors.darkGreen,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
@@ -579,9 +575,11 @@ class _FocusScreenState extends State<FocusScreen> {
                                   child: OutlinedButton(
                                     onPressed: _stopTimer,
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor: kCreme.withOpacity(0.9),
+                                      foregroundColor:
+                                          AppColors.creme.withOpacity(0.9),
                                       side: BorderSide(
-                                          color: kCreme.withOpacity(0.8),
+                                          color:
+                                              AppColors.creme.withOpacity(0.8),
                                           width: 1.6),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(14),
@@ -604,8 +602,8 @@ class _FocusScreenState extends State<FocusScreen> {
                                   child: ElevatedButton(
                                     onPressed: _endFocus,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: kCreme,
-                                      foregroundColor: kDarkGreen,
+                                      backgroundColor: AppColors.creme,
+                                      foregroundColor: AppColors.darkGreen,
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(14),
@@ -634,8 +632,8 @@ class _FocusScreenState extends State<FocusScreen> {
                                       ? null
                                       : _startTimer,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: kCreme,
-                                foregroundColor: kDarkGreen,
+                                backgroundColor: AppColors.creme,
+                                foregroundColor: AppColors.darkGreen,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
@@ -663,7 +661,7 @@ class _FocusScreenState extends State<FocusScreen> {
                       '🎧 Sound: $_sound ▾',
                       style: TextStyle(
                         fontSize: 13,
-                        color: kCreme.withOpacity(0.75),
+                        color: AppColors.creme.withOpacity(0.75),
                       ),
                     ),
                   ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui';
 import 'package:succulent_app/core/classification/category.dart';
 import 'package:succulent_app/core/classification/classifier.dart';
 import 'package:succulent_app/features/focus/presentation/pages/focus_screen.dart';
@@ -27,12 +26,12 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
   final FocusNode _habitFocusNode = FocusNode();
 
   // State variables
-  String _submittedHabit = '';
+  final String _submittedHabit = '';
   final String _userName = 'Anita';
   CategoryId? _suggestedCategory;
   CategoryId? _selectedCategory;
   final List<_HabitEntry> _habitEntries = [];
-  String _selectedDuration = '20m';
+  final String _selectedDuration = '20m';
   bool _isInputOpen = false;
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
@@ -148,7 +147,7 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final double bottomPanelHeight = 220;
+    const double bottomPanelHeight = 220;
     final Color backgroundColor = Color.lerp(Colors.white, kCreme, 0.2)!;
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
     final double plantScale = 0.8 + (_plantGrowth * 0.4); // Range 0.8 to 1.2

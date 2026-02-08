@@ -47,6 +47,13 @@ class SuggestCategoryEvent extends HomeEvent {
   List<Object?> get props => [text];
 }
 
+class ClearCategoryEvent extends HomeEvent {
+  const ClearCategoryEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
 class SelectCategoryEvent extends HomeEvent {
   final CategoryId category;
   const SelectCategoryEvent(this.category);

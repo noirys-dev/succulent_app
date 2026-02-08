@@ -1,14 +1,16 @@
 import 'dart:async';
-import 'package:succulent_app/features/home/domain/entities/habit.dart';
+import 'package:succulent_app/features/home/data/models/habit_model.dart';
 import 'package:succulent_app/features/home/domain/repositories/home_repository.dart';
 import 'package:uuid/uuid.dart';
 
 class HomeRepositoryImpl implements HomeRepository {
-  final List<Habit> _store = [];
+  // artık listemiz sadece habitmodel tipinde veri kabul ediyor.
+  final List<HabitModel> _store = [];
   final _uuid = const Uuid();
 
   @override
-  Future<void> addHabit(Habit habit) async {
+  Future<void> addHabit(HabitModel habit) async {
+    // yeni bir alışkanlık eklendiğinde id boşsa uuid ile benzersiz bir kimlik atıyoruz.
     final toAdd = habit.copyWith(id: habit.id.isEmpty ? _uuid.v4() : habit.id);
     _store.insert(0, toAdd);
   }
@@ -19,13 +21,13 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   @override
-  Future<List<Habit>> getHabits() async {
-    // For now, return current state
+  Future<List<HabitModel>> getHabits() async {
+    // dışarıdan gelen müdahalelere karşı listeyi korunmuş (unmodifiable) şekilde dönüyoruz.
     return List.unmodifiable(_store);
   }
 
   @override
-  Future<void> updateHabit(Habit habit) async {
+  Future<void> updateHabit(HabitModel habit) async {
     final idx = _store.indexWhere((h) => h.id == habit.id);
     if (idx >= 0) {
       _store[idx] = habit;

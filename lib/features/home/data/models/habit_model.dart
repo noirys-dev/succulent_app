@@ -1,39 +1,34 @@
+import 'package:equatable/equatable.dart';
 import 'package:succulent_app/core/classification/category.dart';
-import 'package:succulent_app/features/home/domain/entities/habit.dart';
 
-class HabitModel extends Habit {
+class HabitModel extends Equatable {
+  final String id;
+  final String title;
+  final Duration plannedDuration;
+  final CategoryId category;
+  final bool isDone;
+
   const HabitModel({
-    required String id,
-    required String title,
-    required Duration plannedDuration,
-    required CategoryId category,
-    bool isDone = false,
-  }) : super(
-          id: id,
-          title: title,
-          plannedDuration: plannedDuration,
-          category: category,
-          isDone: isDone,
-        );
+    required this.id,
+    required this.title,
+    required this.plannedDuration,
+    required this.category,
+    this.isDone = false,
+  });
 
-  factory HabitModel.fromEntity(Habit h) {
+  HabitModel copyWith({
+    String? id,
+    String? title,
+    Duration? plannedDuration,
+    CategoryId? category,
+    bool? isDone,
+  }) {
     return HabitModel(
-      id: h.id,
-      title: h.title,
-      plannedDuration: h.plannedDuration,
-      category: h.category,
-      isDone: h.isDone,
-    );
-  }
-
-  factory HabitModel.fromJson(Map<String, dynamic> json) {
-    return HabitModel(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      plannedDuration: Duration(milliseconds: json['plannedDuration'] as int),
-      category: CategoryId.values.firstWhere(
-          (e) => e.toString() == json['category'].toString()),
-      isDone: json['isDone'] as bool,
+      id: id ?? this.id,
+      title: title ?? this.title,
+      plannedDuration: plannedDuration ?? this.plannedDuration,
+      category: category ?? this.category,
+      isDone: isDone ?? this.isDone,
     );
   }
 
@@ -41,7 +36,20 @@ class HabitModel extends Habit {
         'id': id,
         'title': title,
         'plannedDuration': plannedDuration.inMilliseconds,
-        'category': category.toString(),
+        'category': category.name, // en güvenli saklama yöntemi
         'isDone': isDone,
       };
+
+  factory HabitModel.fromJson(Map<String, dynamic> json) {
+    return HabitModel(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      plannedDuration: Duration(milliseconds: json['plannedDuration'] as int),
+      category: CategoryId.values.byName(json['category'] as String),
+      isDone: json['isDone'] as bool,
+    );
+  }
+
+  @override
+  List<Object?> get props => [id, title, plannedDuration, category, isDone];
 }

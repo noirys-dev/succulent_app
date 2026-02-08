@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:succulent_app/features/home/presentation/pages/home_screen.dart';
+import 'package:succulent_app/core/theme/app_colors.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -27,27 +28,20 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const brown = Color(0xFFA76D5A); // #a76d5a
-    const lightBrown = Color(0xFFE4B69D); // #e4b69d
-    const darkGreen = Color(0xFF76966B); // #76966b
-    const lightGreen = Color(0xFFC3CE98); // #c3ce98
-    const cream = Color(0xFFF9EEDB); // #f9eedb
-    const darkGray = Color(0xFF636262); // #636262
-
     return Scaffold(
-      backgroundColor: cream,
+      backgroundColor: AppColors.creme,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              cream,
-              lightGreen.withOpacity(0.85),
-              Color.lerp(lightGreen, darkGreen, 0.5)!,
-              darkGreen.withOpacity(0.75),
-              lightBrown.withOpacity(0.4),
-              brown.withOpacity(0.3),
+              AppColors.creme,
+              AppColors.lightGreen.withOpacity(0.85),
+              Color.lerp(AppColors.lightGreen, AppColors.darkGreen, 0.5)!,
+              AppColors.darkGreen.withOpacity(0.75),
+              AppColors.lightGreen.withOpacity(0.4),
+              AppColors.darkBrown.withOpacity(0.3),
             ],
             stops: const [0.0, 0.32, 0.5, 0.68, 0.88, 1.0],
           ),
@@ -95,7 +89,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   'Growth, without the grind',
                   style: TextStyle(
                     fontSize: 18,
-                    color: darkGray,
+                    color: AppColors.charcoal,
                     shadows: [
                       Shadow(
                         color: Colors.black.withOpacity(0.15),
@@ -107,7 +101,8 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 const SizedBox(height: 120),
                 const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(darkGreen),
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(AppColors.darkGreen),
                 ),
               ],
             ),
