@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:succulent_app/core/classification/category.dart';
 import 'package:succulent_app/core/classification/classifier.dart';
-import 'package:succulent_app/features/focus/presentation/pages/focus_screen.dart';
 
 // Brand color palette
 const Color kDarkBrown = Color(0xFFA76D5A);
@@ -185,7 +184,7 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: kCharcoal.withOpacity(0.6),
+                                color: kCharcoal.withValues(alpha: 0.6),
                                 letterSpacing: 0.5,
                                 textBaseline: TextBaseline.alphabetic,
                               ),
@@ -207,10 +206,10 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: kLightGreen.withOpacity(0.3),
+                            color: kLightGreen.withValues(alpha: 0.3),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: kDarkGreen.withOpacity(0.2),
+                              color: kDarkGreen.withValues(alpha: 0.2),
                               width: 1.5,
                             ),
                           ),
@@ -230,13 +229,13 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            kLightGreen.withOpacity(0.2),
-                            kLightGreen.withOpacity(0.05),
+                            kLightGreen.withValues(alpha: 0.2),
+                            kLightGreen.withValues(alpha: 0.05),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(32),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           width: 1,
                         ),
                       ),
@@ -264,7 +263,7 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                                         value: value,
                                         strokeWidth: 8,
                                         backgroundColor:
-                                            kLightGreen.withOpacity(0.2),
+                                            kLightGreen.withValues(alpha: 0.2),
                                         valueColor:
                                             const AlwaysStoppedAnimation<Color>(
                                                 kDarkGreen),
@@ -281,11 +280,11 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                                   height: 100 + (_plantGrowth * 50),
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: kLightGreen.withOpacity(0.3),
+                                    color: kLightGreen.withValues(alpha: 0.3),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: kLightGreen.withOpacity(
-                                            0.3 + (_plantGrowth * 0.2)),
+                                        color: kLightGreen.withValues(
+                                            alpha: 0.3 + (_plantGrowth * 0.2)),
                                         blurRadius: 40 + (_plantGrowth * 30),
                                         spreadRadius: 10 + (_plantGrowth * 10),
                                       ),
@@ -322,7 +321,7 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: kDarkGreen.withOpacity(0.9),
+                                  color: kDarkGreen.withValues(alpha: 0.9),
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -365,7 +364,7 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: kCharcoal.withOpacity(0.9),
+                        color: kCharcoal.withValues(alpha: 0.9),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -423,7 +422,7 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                               : BorderRadius.circular(40)),
                       boxShadow: [
                         BoxShadow(
-                          color: kDarkGreen.withOpacity(0.25),
+                          color: kDarkGreen.withValues(alpha: 0.25),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -477,18 +476,18 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: Colors.white.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color.withOpacity(0.8), size: 20),
+          Icon(icon, color: color.withValues(alpha: 0.8), size: 20),
           const SizedBox(height: 12),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: kCharcoal,
@@ -498,7 +497,7 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
             title,
             style: TextStyle(
               fontSize: 12,
-              color: kCharcoal.withOpacity(0.6),
+              color: kCharcoal.withValues(alpha: 0.6),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -544,20 +543,21 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color:
-                  entry.isDone ? kLightGreen.withOpacity(0.15) : Colors.white,
+              color: entry.isDone
+                  ? kLightGreen.withValues(alpha: 0.15)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: entry.isDone
-                    ? kDarkGreen.withOpacity(0.4)
-                    : kLightGreen.withOpacity(0.5),
+                    ? kDarkGreen.withValues(alpha: 0.4)
+                    : kLightGreen.withValues(alpha: 0.5),
                 width: 1.5,
               ),
               boxShadow: entry.isDone
                   ? []
                   : [
                       BoxShadow(
-                        color: kDarkGreen.withOpacity(0.08),
+                        color: kDarkGreen.withValues(alpha: 0.08),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -592,7 +592,7 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: entry.isDone
-                              ? kCharcoal.withOpacity(0.5)
+                              ? kCharcoal.withValues(alpha: 0.5)
                               : kCharcoal,
                           decoration: entry.isDone
                               ? TextDecoration.lineThrough
@@ -604,13 +604,14 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                         Row(
                           children: [
                             Icon(Icons.access_time_rounded,
-                                size: 12, color: kCharcoal.withOpacity(0.6)),
+                                size: 12,
+                                color: kCharcoal.withValues(alpha: 0.6)),
                             const SizedBox(width: 4),
                             Text(
                               entry.durationText,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: kCharcoal.withOpacity(0.6),
+                                color: kCharcoal.withValues(alpha: 0.6),
                               ),
                             ),
                           ],
@@ -670,7 +671,7 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     )
@@ -710,7 +711,7 @@ class _GardenHomeScreenState extends State<GardenHomeScreen>
               decoration: InputDecoration(
                 hintText: "Plant a new seed...",
                 filled: true,
-                fillColor: kCreme.withOpacity(0.3),
+                fillColor: kCreme.withValues(alpha: 0.3),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide.none,

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:succulent_app/core/classification/category.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
 import 'package:succulent_app/features/focus/presentation/pages/focus_screen.dart';
 import 'package:succulent_app/features/home/data/models/habit_model.dart';
 import 'package:succulent_app/features/home/presentation/bloc/home_bloc.dart';
 import 'package:succulent_app/features/home/presentation/bloc/home_event.dart';
+import 'package:succulent_app/features/home/presentation/pages/home_screen_helpers.dart';
 
 class HabitCard extends StatelessWidget {
   final HabitModel entry;
@@ -20,20 +20,11 @@ class HabitCard extends StatelessWidget {
     required this.index,
   });
 
-  String _formatDurationText(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    if (h > 0 && m > 0) return '${h}h ${m}m';
-    if (h > 0) return '${h}h';
-    return '${m}m';
-  }
-
-  String _categoryLabel(CategoryId id) {
-    return kCategories.firstWhere((category) => category.id == id).label;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final formattedDuration =
+        HomeScreenHelpers.formatDurationText(entry.plannedDuration);
+    final categoryLabel = HomeScreenHelpers.categoryLabelFromId(entry.category);
     return GestureDetector(
       onTap: () {
         context.read<HomeBloc>().add(ToggleHabitDoneEvent(entry.id));
@@ -54,10 +45,10 @@ class HabitCard extends StatelessWidget {
             vertical: 12,
           ),
           decoration: BoxDecoration(
-            color: AppColors.lightGreen.withOpacity(0.45),
+            color: AppColors.lightGreen.withValues(alpha: 0.45),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: AppColors.darkGreen.withOpacity(0.85),
+              color: AppColors.darkGreen.withValues(alpha: 0.85),
             ),
           ),
           child: Stack(
@@ -80,18 +71,18 @@ class HabitCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        _formatDurationText(entry.plannedDuration),
+                        formattedDuration,
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.charcoal.withOpacity(0.8),
+                          color: AppColors.charcoal.withValues(alpha: 0.8),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        _categoryLabel(entry.category),
+                        categoryLabel,
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.charcoal.withOpacity(0.8),
+                          color: AppColors.charcoal.withValues(alpha: 0.8),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -99,8 +90,7 @@ class HabitCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (_categoryLabel(entry.category) == 'Productivity' &&
-                  !entry.isDone)
+              if (categoryLabel == 'Productivity' && !entry.isDone)
                 Positioned(
                   right: 0,
                   top: 0,
@@ -140,10 +130,10 @@ class HabitCard extends StatelessWidget {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: AppColors.lightGreen.withOpacity(0.35),
+                            color: AppColors.lightGreen.withValues(alpha: 0.35),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                              color: AppColors.darkGreen.withOpacity(0.9),
+                              color: AppColors.darkGreen.withValues(alpha: 0.9),
                             ),
                           ),
                           child: const Center(

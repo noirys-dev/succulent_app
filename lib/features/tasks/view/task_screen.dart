@@ -5,13 +5,30 @@ import 'package:succulent_app/features/tasks/models/task.dart';
 import 'package:succulent_app/features/tasks/models/task_category.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
 
-class TaskScreen extends StatelessWidget {
+class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final TextEditingController _taskController = TextEditingController();
+  State<TaskScreen> createState() => _TaskScreenState();
+}
 
+class _TaskScreenState extends State<TaskScreen> {
+  late final TextEditingController taskController;
+
+  @override
+  void initState() {
+    super.initState();
+    taskController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    taskController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.creme,
       appBar: AppBar(
@@ -39,19 +56,19 @@ class TaskScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.darkBrown.withOpacity(0.1),
+                    color: AppColors.darkBrown.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: TextField(
-                controller: _taskController,
+                controller: taskController,
                 style: const TextStyle(color: AppColors.charcoal),
                 decoration: InputDecoration(
                   hintText: 'what did you do today?',
-                  hintStyle:
-                      TextStyle(color: AppColors.charcoal.withOpacity(0.4)),
+                  hintStyle: TextStyle(
+                      color: AppColors.charcoal.withValues(alpha: 0.4)),
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                   border: InputBorder.none,
@@ -59,19 +76,19 @@ class TaskScreen extends StatelessWidget {
                     icon: const Icon(Icons.add_circle,
                         color: AppColors.darkGreen, size: 30),
                     onPressed: () {
-                      if (_taskController.text.isNotEmpty) {
+                      if (taskController.text.isNotEmpty) {
                         final now = DateTime.now();
                         final task = Task(
                           id: now.microsecondsSinceEpoch.toString(),
                           succulentId: '',
                           category: TaskCategory.other,
-                          title: _taskController.text,
+                          title: taskController.text,
                           scheduledDate: now,
                           createdAt: now,
                           updatedAt: now,
                         );
                         context.read<TaskBloc>().add(AddTaskEvent(task));
-                        _taskController.clear();
+                        taskController.clear();
                       }
                     },
                   ),
@@ -89,7 +106,7 @@ class TaskScreen extends StatelessWidget {
                       updatedAt: now,
                     );
                     context.read<TaskBloc>().add(AddTaskEvent(task));
-                    _taskController.clear();
+                    taskController.clear();
                   }
                 },
               ),
@@ -119,12 +136,12 @@ class TaskScreen extends StatelessWidget {
                       children: [
                         Icon(Icons.psychology_outlined,
                             size: 60,
-                            color: AppColors.lightBrown.withOpacity(0.5)),
+                            color: AppColors.lightBrown.withValues(alpha: 0.5)),
                         const SizedBox(height: 10),
                         Text(
                           'no tasks yet. keep growing.',
                           style: TextStyle(
-                              color: AppColors.charcoal.withOpacity(0.5)),
+                              color: AppColors.charcoal.withValues(alpha: 0.5)),
                         ),
                       ],
                     ),
@@ -137,6 +154,7 @@ class TaskScreen extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final task = state.tasks[index];
                     return Container(
+                      key: ValueKey(task.id),
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -169,7 +187,7 @@ class TaskScreen extends StatelessWidget {
                           task.title.toLowerCase(),
                           style: TextStyle(
                             color: task.isCompleted
-                                ? AppColors.charcoal.withOpacity(0.4)
+                                ? AppColors.charcoal.withValues(alpha: 0.4)
                                 : AppColors.charcoal,
                             decoration: task.isCompleted
                                 ? TextDecoration.lineThrough
@@ -180,7 +198,7 @@ class TaskScreen extends StatelessWidget {
                         subtitle: Text(
                           task.category.displayName.toLowerCase(),
                           style: TextStyle(
-                            color: AppColors.darkBrown.withOpacity(0.6),
+                            color: AppColors.darkBrown.withValues(alpha: 0.6),
                             fontSize: 12,
                           ),
                         ),

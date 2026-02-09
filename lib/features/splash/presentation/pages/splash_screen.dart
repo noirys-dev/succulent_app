@@ -37,11 +37,11 @@ class _SplashScreenState extends State<SplashScreen> {
             end: Alignment.bottomRight,
             colors: [
               AppColors.creme,
-              AppColors.lightGreen.withOpacity(0.85),
+              AppColors.lightGreen.withValues(alpha: 0.85),
               Color.lerp(AppColors.lightGreen, AppColors.darkGreen, 0.5)!,
-              AppColors.darkGreen.withOpacity(0.75),
-              AppColors.lightGreen.withOpacity(0.4),
-              AppColors.darkBrown.withOpacity(0.3),
+              AppColors.darkGreen.withValues(alpha: 0.75),
+              AppColors.lightGreen.withValues(alpha: 0.4),
+              AppColors.darkBrown.withValues(alpha: 0.3),
             ],
             stops: const [0.0, 0.32, 0.5, 0.68, 0.88, 1.0],
           ),
@@ -77,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     color: Colors.white,
                     shadows: [
                       Shadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         offset: const Offset(0, 3),
                         blurRadius: 10,
                       ),
@@ -92,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     color: AppColors.charcoal,
                     shadows: [
                       Shadow(
-                        color: Colors.black.withOpacity(0.15),
+                        color: Colors.black.withValues(alpha: 0.15),
                         offset: const Offset(0, 3),
                         blurRadius: 10,
                       ),

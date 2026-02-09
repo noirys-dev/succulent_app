@@ -29,11 +29,11 @@ class PomodoroTile extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.lightGreen.withOpacity(0.5),
+              color: AppColors.lightGreen.withValues(alpha: 0.5),
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.darkGreen.withOpacity(0.05),
+                color: AppColors.darkGreen.withValues(alpha: 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -44,7 +44,7 @@ class PomodoroTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.lightGreen.withOpacity(0.3),
+                  color: AppColors.lightGreen.withValues(alpha: 0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: AppColors.darkGreen, size: 20),
@@ -66,7 +66,7 @@ class PomodoroTile extends StatelessWidget {
                     '$duration focus · $breakTime',
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.charcoal.withOpacity(0.6),
+                      color: AppColors.charcoal.withValues(alpha: 0.6),
                     ),
                   ),
                 ],

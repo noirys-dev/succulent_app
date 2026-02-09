@@ -151,6 +151,7 @@ class _FocusScreenState extends State<FocusScreen> {
     _timer?.cancel();
     await _fadeOutAndStopAudio();
     if (_isCompleted) {
+      if (!mounted) return;
       Navigator.of(context).pop({
         'updatedDuration': _sessionTargetDuration,
         'completed': true,
@@ -165,6 +166,7 @@ class _FocusScreenState extends State<FocusScreen> {
     debugPrint(
       'Focus ended: ${widget.taskTitle}, planned=$_originalDuration, remaining=$_remainingDuration, sound=$_sound',
     );
+    if (!mounted) return;
     Navigator.of(context).pop({
       'completed': false,
     });
@@ -209,7 +211,7 @@ class _FocusScreenState extends State<FocusScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    const Text(
                       'Duration',
                       style: TextStyle(
                         fontSize: 16,
@@ -292,7 +294,7 @@ class _FocusScreenState extends State<FocusScreen> {
                   if (_isRunning) {
                     await _fadeOutAndStopAudio();
                   }
-                  Navigator.of(context).pop();
+                  if (context.mounted) Navigator.of(context).pop();
                 },
               ),
               _SoundOption(
@@ -302,7 +304,7 @@ class _FocusScreenState extends State<FocusScreen> {
                   if (_isRunning) {
                     await _playLofi();
                   }
-                  Navigator.of(context).pop();
+                  if (context.mounted) Navigator.of(context).pop();
                 },
               ),
               _SoundOption(
@@ -312,7 +314,7 @@ class _FocusScreenState extends State<FocusScreen> {
                   if (_isRunning) {
                     await _fadeOutAndStopAudio();
                   }
-                  Navigator.of(context).pop();
+                  if (context.mounted) Navigator.of(context).pop();
                 },
               ),
               const SizedBox(height: 12),
@@ -417,7 +419,7 @@ class _FocusScreenState extends State<FocusScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         _showEndSessionDialog();
       },
@@ -447,7 +449,7 @@ class _FocusScreenState extends State<FocusScreen> {
                           icon: Icon(
                             Icons.chevron_left,
                             size: 40,
-                            color: AppColors.creme.withOpacity(0.9),
+                            color: AppColors.creme.withValues(alpha: 0.9),
                           ),
                           onPressed: _showEndSessionDialog,
                           tooltip: 'Back',
@@ -460,7 +462,7 @@ class _FocusScreenState extends State<FocusScreen> {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.creme.withOpacity(0.8),
+                            color: AppColors.creme.withValues(alpha: 0.8),
                           ),
                         ),
                       ),
@@ -478,7 +480,7 @@ class _FocusScreenState extends State<FocusScreen> {
                           'Currently working on:',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.creme.withOpacity(0.7),
+                            color: AppColors.creme.withValues(alpha: 0.7),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -488,7 +490,7 @@ class _FocusScreenState extends State<FocusScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.creme.withOpacity(0.9),
+                            color: AppColors.creme.withValues(alpha: 0.9),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -497,7 +499,7 @@ class _FocusScreenState extends State<FocusScreen> {
                           width: 120,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.creme.withOpacity(0.08),
+                            color: AppColors.creme.withValues(alpha: 0.08),
                           ),
                         ),
                         if (_isCompleted && _completionMessage != null) ...[
@@ -508,7 +510,7 @@ class _FocusScreenState extends State<FocusScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.creme.withOpacity(0.75),
+                              color: AppColors.creme.withValues(alpha: 0.75),
                             ),
                           ),
                         ],
@@ -575,11 +577,11 @@ class _FocusScreenState extends State<FocusScreen> {
                                   child: OutlinedButton(
                                     onPressed: _stopTimer,
                                     style: OutlinedButton.styleFrom(
-                                      foregroundColor:
-                                          AppColors.creme.withOpacity(0.9),
+                                      foregroundColor: AppColors.creme
+                                          .withValues(alpha: 0.9),
                                       side: BorderSide(
-                                          color:
-                                              AppColors.creme.withOpacity(0.8),
+                                          color: AppColors.creme
+                                              .withValues(alpha: 0.8),
                                           width: 1.6),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(14),
@@ -661,7 +663,7 @@ class _FocusScreenState extends State<FocusScreen> {
                       '🎧 Sound: $_sound ▾',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.creme.withOpacity(0.75),
+                        color: AppColors.creme.withValues(alpha: 0.75),
                       ),
                     ),
                   ),

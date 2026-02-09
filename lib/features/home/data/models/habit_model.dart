@@ -7,14 +7,16 @@ class HabitModel extends Equatable {
   final Duration plannedDuration;
   final CategoryId category;
   final bool isDone;
+  final DateTime createdAt;
 
-  const HabitModel({
+  HabitModel({
     required this.id,
     required this.title,
     required this.plannedDuration,
     required this.category,
     this.isDone = false,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
   HabitModel copyWith({
     String? id,
@@ -22,6 +24,7 @@ class HabitModel extends Equatable {
     Duration? plannedDuration,
     CategoryId? category,
     bool? isDone,
+    DateTime? createdAt,
   }) {
     return HabitModel(
       id: id ?? this.id,
@@ -29,6 +32,7 @@ class HabitModel extends Equatable {
       plannedDuration: plannedDuration ?? this.plannedDuration,
       category: category ?? this.category,
       isDone: isDone ?? this.isDone,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
@@ -38,6 +42,7 @@ class HabitModel extends Equatable {
         'plannedDuration': plannedDuration.inMilliseconds,
         'category': category.name, // en güvenli saklama yöntemi
         'isDone': isDone,
+        'createdAt': createdAt.toIso8601String(),
       };
 
   factory HabitModel.fromJson(Map<String, dynamic> json) {
@@ -47,9 +52,13 @@ class HabitModel extends Equatable {
       plannedDuration: Duration(milliseconds: json['plannedDuration'] as int),
       category: CategoryId.values.byName(json['category'] as String),
       isDone: json['isDone'] as bool,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
     );
   }
 
   @override
-  List<Object?> get props => [id, title, plannedDuration, category, isDone];
+  List<Object?> get props =>
+      [id, title, plannedDuration, category, isDone, createdAt];
 }

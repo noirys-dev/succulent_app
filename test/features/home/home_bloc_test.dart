@@ -1,3 +1,5 @@
+import 'package:mocktail/mocktail.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:succulent_app/features/home/presentation/bloc/home_bloc.dart';
@@ -6,12 +8,20 @@ import 'package:succulent_app/features/home/presentation/bloc/home_state.dart';
 import 'package:succulent_app/features/home/data/home_repository_impl.dart';
 import 'package:succulent_app/core/classification/category.dart';
 
+class MockStorage extends Mock implements Storage {}
+
 void main() {
   group('HomeBloc', () {
     late HomeRepositoryImpl repository;
     late HomeBloc bloc;
+    late Storage storage;
 
     setUp(() {
+      storage = MockStorage();
+      when(() => storage.write(any(), any<dynamic>())).thenAnswer((_) async {});
+      when(() => storage.read(any())).thenReturn(null);
+      HydratedBloc.storage = storage;
+
       repository = HomeRepositoryImpl();
       bloc = HomeBloc(repository: repository);
     });
@@ -21,7 +31,7 @@ void main() {
     });
 
     test('initial state is HomeState()', () {
-      expect(bloc.state, equals(const HomeState()));
+      expect(bloc.state, equals(HomeState()));
     });
 
     blocTest<HomeBloc, HomeState>(
@@ -34,9 +44,9 @@ void main() {
     blocTest<HomeBloc, HomeState>(
       'adds a habit and updates state',
       build: () => bloc,
-      act: (bloc) => bloc.add(AddHabitEvent(
+      act: (bloc) => bloc.add(const AddHabitEvent(
         title: 'New Task',
-        duration: const Duration(minutes: 30),
+        duration: Duration(minutes: 30),
         category: CategoryId.productivity,
       )),
       wait: const Duration(milliseconds: 50),
@@ -47,9 +57,9 @@ void main() {
       'toggles habit done',
       build: () => bloc,
       act: (bloc) async {
-        bloc.add(AddHabitEvent(
+        bloc.add(const AddHabitEvent(
           title: 'Toggle Me',
-          duration: const Duration(minutes: 10),
+          duration: Duration(minutes: 10),
           category: CategoryId.general,
         ));
         await Future.delayed(const Duration(milliseconds: 20));

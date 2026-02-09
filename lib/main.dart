@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:succulent_app/features/home/presentation/bloc/home_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:succulent_app/features/tasks/bloc/task_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,8 +26,11 @@ class SucculentApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // Toggle this flag to open the classification test screen
 
-    return BlocProvider(
-        create: (_) => di.getIt<HomeBloc>(),
+    return MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => di.getIt<HomeBloc>()),
+          BlocProvider(create: (_) => di.getIt<TaskBloc>()),
+        ],
         child: MaterialApp(
           title: 'Succulent',
           debugShowCheckedModeBanner: false,

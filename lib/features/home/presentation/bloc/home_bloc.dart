@@ -10,7 +10,7 @@ class HomeBloc extends HydratedBloc<HomeEvent, HomeState> {
   final HomeRepository repository;
   final _uuid = const Uuid();
 
-  HomeBloc({required this.repository}) : super(const HomeState()) {
+  HomeBloc({required this.repository}) : super(HomeState()) {
     on<LoadHabits>(_onLoad);
     on<AddHabitEvent>(_onAdd);
     on<RemoveHabitEvent>(_onRemove);
@@ -19,11 +19,11 @@ class HomeBloc extends HydratedBloc<HomeEvent, HomeState> {
     on<ClearCategoryEvent>(_onClearCategory);
     on<SelectCategoryEvent>(_onSelectCategory);
     on<UpdateHabitEvent>(_onUpdate);
+    on<ChangeDateEvent>(_onChangeDate);
   }
 
-  @override
-  void onChange(Change<HomeState> change) {
-    super.onChange(change);
+  void _onChangeDate(ChangeDateEvent event, Emitter<HomeState> emit) {
+    emit(state.copyWith(selectedDate: event.date));
   }
 
   Future<void> _onLoad(LoadHabits event, Emitter<HomeState> emit) async {

@@ -31,7 +31,7 @@ class _RootNavigationState extends State<RootNavigation> {
         onTap: (index) => setState(() => _currentIndex = index),
         backgroundColor: AppColors.creme,
         selectedItemColor: AppColors.darkBrown,
-        unselectedItemColor: AppColors.darkBrown.withOpacity(0.4),
+        unselectedItemColor: AppColors.darkBrown.withValues(alpha: 0.4),
         showSelectedLabels: true,
         showUnselectedLabels: false,
         items: const [
