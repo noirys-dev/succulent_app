@@ -81,3 +81,18 @@ class ChangeDateEvent extends HomeEvent {
   @override
   List<Object?> get props => [date];
 }
+
+class ToggleCalendarEvent extends HomeEvent {
+  const ToggleCalendarEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class ChangeDisplayedMonthEvent extends HomeEvent {
+  final DateTime month;
+  const ChangeDisplayedMonthEvent(this.month);
+
+  @override
+  List<Object?> get props => [month];
+}

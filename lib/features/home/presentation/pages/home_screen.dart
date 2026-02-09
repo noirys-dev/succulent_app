@@ -6,12 +6,10 @@ import 'package:succulent_app/features/home/presentation/bloc/home_bloc.dart';
 import 'package:succulent_app/features/home/presentation/bloc/home_event.dart';
 import 'package:succulent_app/features/home/presentation/bloc/home_state.dart';
 import 'package:succulent_app/features/home/presentation/widgets/habit_card.dart';
-import 'package:succulent_app/features/home/presentation/widgets/home_header.dart';
 import 'package:succulent_app/features/home/presentation/widgets/home_nav_bar.dart';
-import 'package:succulent_app/features/home/presentation/widgets/date_strip.dart';
 import 'package:succulent_app/features/home/presentation/widgets/home_screen_input_section.dart';
-import 'package:succulent_app/features/home/presentation/widgets/home_progress_bar.dart';
 import 'package:succulent_app/features/home/presentation/widgets/home_empty_state.dart';
+import 'package:succulent_app/features/home/presentation/widgets/home_sliver_header_delegate.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
 import 'package:succulent_app/features/home/presentation/widgets/edit_habit_sheet.dart';
 import 'home_screen_helpers.dart';
@@ -103,76 +101,65 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             child: Stack(
               children: [
-                SafeArea(
-                  bottom: false,
-                  child: CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                          child: HomeHeader(
-                            userName: _userName,
-                            completedHabits: completedHabits,
-                            totalHabits: totalHabits,
-                            streakCount: state.streakCount,
-                            focusedTime: state.totalFocusedTime,
-                          ),
+                CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: HomeSliverHeaderDelegate(
+                        userName: _userName,
+                        completedHabits: completedHabits,
+                        totalHabits: totalHabits,
+                        streakCount: state.streakCount,
+                        focusedTime: state.totalFocusedTime,
+                        selectedDate: state.selectedDate,
+                        onDateSelected: (date) {
+                          context.read<HomeBloc>().add(ChangeDateEvent(date));
+                        },
+                        topPadding: MediaQuery.of(context).padding.top,
+                        isCalendarOpen: state.isCalendarOpen,
+                        displayedMonth: state.displayedMonth,
+                        completionData: state.monthCompletionData,
+                        onToggleCalendar: () {
+                          context
+                              .read<HomeBloc>()
+                              .add(const ToggleCalendarEvent());
+                        },
+                        onChangeMonth: (month) {
+                          context
+                              .read<HomeBloc>()
+                              .add(ChangeDisplayedMonthEvent(month));
+                        },
+                      ),
+                    ),
+                    SliverPadding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 24).copyWith(
+                        top: 16,
+                        bottom: bottomPanelHeight + 40,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            if (filteredHabits.isEmpty) {
+                              return const HomeEmptyState();
+                            }
+                            final habit = filteredHabits[index];
+                            return HabitCard(
+                              key: ValueKey(habit.id),
+                              entry: habit,
+                              index: state.habits.indexOf(habit),
+                              onEdit: () => _openEditHabitSheet(
+                                  state.habits.indexOf(habit)),
+                            );
+                          },
+                          childCount: filteredHabits.isEmpty
+                              ? 1
+                              : filteredHabits.length,
                         ),
                       ),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: DateStrip(
-                            selectedDate: state.selectedDate,
-                            onDateSelected: (date) {
-                              context
-                                  .read<HomeBloc>()
-                                  .add(ChangeDateEvent(date));
-                            },
-                          ),
-                        ),
-                      ),
-                      if (totalHabits > 0)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 8),
-                            child: HomeProgressBar(
-                              completedHabits: completedHabits,
-                              totalHabits: totalHabits,
-                            ),
-                          ),
-                        ),
-                      SliverPadding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 24).copyWith(
-                          top: 16,
-                          bottom: bottomPanelHeight + 40,
-                        ),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              if (filteredHabits.isEmpty) {
-                                return const HomeEmptyState();
-                              }
-                              final habit = filteredHabits[index];
-                              return HabitCard(
-                                key: ValueKey(habit.id),
-                                entry: habit,
-                                index: state.habits.indexOf(habit),
-                                onEdit: () => _openEditHabitSheet(
-                                    state.habits.indexOf(habit)),
-                              );
-                            },
-                            childCount: filteredHabits.isEmpty
-                                ? 1
-                                : filteredHabits.length,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
                 // Top Blur Area (Only when scrolled)
                 if (_isScrolled)

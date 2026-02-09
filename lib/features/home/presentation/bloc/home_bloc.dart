@@ -20,10 +20,57 @@ class HomeBloc extends HydratedBloc<HomeEvent, HomeState> {
     on<SelectCategoryEvent>(_onSelectCategory);
     on<UpdateHabitEvent>(_onUpdate);
     on<ChangeDateEvent>(_onChangeDate);
+    on<ToggleCalendarEvent>(_onToggleCalendar);
+    on<ChangeDisplayedMonthEvent>(_onChangeDisplayedMonth);
   }
 
   void _onChangeDate(ChangeDateEvent event, Emitter<HomeState> emit) {
-    emit(state.copyWith(selectedDate: event.date));
+    emit(state.copyWith(selectedDate: event.date, isCalendarOpen: false));
+  }
+
+  void _onToggleCalendar(ToggleCalendarEvent event, Emitter<HomeState> emit) {
+    final newIsOpen = !state.isCalendarOpen;
+    if (newIsOpen) {
+      // When opening calendar, compute completion data for displayed month
+      final completionData = _computeMonthCompletionData(state.displayedMonth);
+      emit(state.copyWith(
+        isCalendarOpen: true,
+        monthCompletionData: completionData,
+      ));
+    } else {
+      emit(state.copyWith(isCalendarOpen: false));
+    }
+  }
+
+  void _onChangeDisplayedMonth(
+      ChangeDisplayedMonthEvent event, Emitter<HomeState> emit) {
+    final completionData = _computeMonthCompletionData(event.month);
+    emit(state.copyWith(
+      displayedMonth: event.month,
+      monthCompletionData: completionData,
+    ));
+  }
+
+  Map<DateTime, double> _computeMonthCompletionData(DateTime month) {
+    final Map<DateTime, double> result = {};
+    final firstDay = DateTime(month.year, month.month, 1);
+    final lastDay = DateTime(month.year, month.month + 1, 0);
+
+    for (var day = firstDay;
+        !day.isAfter(lastDay);
+        day = day.add(const Duration(days: 1))) {
+      final normalizedDay = DateTime(day.year, day.month, day.day);
+      final habitsOnDay = state.habits.where((h) =>
+          h.createdAt.year == day.year &&
+          h.createdAt.month == day.month &&
+          h.createdAt.day == day.day);
+
+      if (habitsOnDay.isNotEmpty) {
+        final completed = habitsOnDay.where((h) => h.isDone).length;
+        result[normalizedDay] = completed / habitsOnDay.length;
+      }
+    }
+    return result;
   }
 
   Future<void> _onLoad(LoadHabits event, Emitter<HomeState> emit) async {

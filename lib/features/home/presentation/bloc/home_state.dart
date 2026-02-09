@@ -7,25 +7,38 @@ class HomeState extends Equatable {
   final CategoryId? suggestedCategory;
   final CategoryId? selectedCategory;
   final DateTime selectedDate;
+  final bool isCalendarOpen;
+  final DateTime displayedMonth;
+  final Map<DateTime, double> monthCompletionData;
 
   HomeState({
     this.habits = const [],
     this.suggestedCategory,
     this.selectedCategory,
     DateTime? selectedDate,
-  }) : selectedDate = selectedDate ?? DateTime.now();
+    this.isCalendarOpen = false,
+    DateTime? displayedMonth,
+    this.monthCompletionData = const {},
+  })  : selectedDate = selectedDate ?? DateTime.now(),
+        displayedMonth = displayedMonth ?? DateTime.now();
 
   HomeState copyWith({
     List<HabitModel>? habits,
     CategoryId? suggestedCategory,
     CategoryId? selectedCategory,
     DateTime? selectedDate,
+    bool? isCalendarOpen,
+    DateTime? displayedMonth,
+    Map<DateTime, double>? monthCompletionData,
   }) {
     return HomeState(
       habits: habits ?? this.habits,
       suggestedCategory: suggestedCategory ?? this.suggestedCategory,
       selectedCategory: selectedCategory ?? this.selectedCategory,
       selectedDate: selectedDate ?? this.selectedDate,
+      isCalendarOpen: isCalendarOpen ?? this.isCalendarOpen,
+      displayedMonth: displayedMonth ?? this.displayedMonth,
+      monthCompletionData: monthCompletionData ?? this.monthCompletionData,
     );
   }
 
@@ -82,8 +95,15 @@ class HomeState extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [habits, suggestedCategory, selectedCategory, selectedDate];
+  List<Object?> get props => [
+        habits,
+        suggestedCategory,
+        selectedCategory,
+        selectedDate,
+        isCalendarOpen,
+        displayedMonth,
+        monthCompletionData
+      ];
 
   Map<String, dynamic> toJson() {
     return {
