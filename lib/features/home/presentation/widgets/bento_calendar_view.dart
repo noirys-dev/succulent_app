@@ -10,7 +10,10 @@ class BentoCalendarView extends StatelessWidget {
   final Function(DateTime) onDateSelected;
   final VoidCallback onMonthPrev;
   final VoidCallback onMonthNext;
+  final VoidCallback onTodayPress;
   final VoidCallback onClose;
+  final bool canGoPrev;
+  final bool canGoNext;
 
   const BentoCalendarView({
     super.key,
@@ -20,123 +23,155 @@ class BentoCalendarView extends StatelessWidget {
     required this.onDateSelected,
     required this.onMonthPrev,
     required this.onMonthNext,
+    required this.onTodayPress,
     required this.onClose,
+    this.canGoPrev = true,
+    this.canGoNext = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.darkGreen.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    final monthName = monthNames[displayedMonth.month - 1];
+
+    return GestureDetector(
+      // Swipe (Kaydırma) ile ay değiştirme
+      onHorizontalDragEnd: (details) {
+        if (details.primaryVelocity! > 0 && canGoPrev) {
+          onMonthPrev(); // Sağa kaydır -> Önceki Ay
+        } else if (details.primaryVelocity! < 0 && canGoNext) {
+          onMonthNext(); // Sola kaydır -> Sonraki Ay
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.9),
+            width: 2,
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.darkGreen.withValues(alpha: 0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          // Stack kullanarak öğeleri üst üste ve sabitliyoruz
           children: [
-            // Header: Month navigation + close button
-            _buildHeader(),
-            const SizedBox(height: 12),
-            // Weekday labels
-            _buildWeekdayLabels(),
-            const SizedBox(height: 8),
-            // Day grid
-            Expanded(child: _buildDayGrid()),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Column(
+                children: [
+                  const SizedBox(height: 2), // 6 -> 2
+                  _buildHeader(monthName),
+                  const SizedBox(height: 4), // 8 -> 4
+                  _buildHorizontalWeekdayLabels(),
+                  const SizedBox(height: 2),
+                  _buildHeatmapGrid(),
+                ],
+              ),
+            ),
+            // Skalayı kartın en altına sabitliyoruz (Hücrelerden bağımsız)
+            Positioned(
+              bottom: 8,
+              left: 0,
+              right: 0,
+              child: Center(child: _buildMinimalLegend()),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    final monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December'
-    ];
-    final monthName = monthNames[displayedMonth.month - 1];
-
+  Widget _buildHeader(String monthName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        IconButton(
-          onPressed: onMonthPrev,
-          icon: const Icon(Icons.chevron_left, color: AppColors.charcoal),
-          iconSize: 24,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        Text(
-          '$monthName ${displayedMonth.year}',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.charcoal,
+        // Sol: Yenile (Today) Butonu
+        GestureDetector(
+          onTap: onTodayPress,
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.darkGreen.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.today_rounded,
+                size: 16, color: AppColors.darkGreen),
           ),
         ),
+
+        // Orta: Ay ve Yıl
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              onPressed: onMonthNext,
-              icon: const Icon(Icons.chevron_right, color: AppColors.charcoal),
-              iconSize: 24,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: onClose,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.lightGreen.withValues(alpha: 0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.close,
-                  size: 16,
-                  color: AppColors.darkGreen,
-                ),
+            // Sol ok (İpucu)
+            Icon(Icons.chevron_left_rounded,
+                size: 16, color: AppColors.charcoal.withValues(alpha: 0.2)),
+            const SizedBox(width: 4),
+            Text(
+              '$monthName ${displayedMonth.year}',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+                color: AppColors.darkGreen,
               ),
             ),
+            const SizedBox(width: 4),
+            // Sağ ok (İpucu)
+            Icon(Icons.chevron_right_rounded,
+                size: 16, color: AppColors.charcoal.withValues(alpha: 0.2)),
           ],
+        ),
+
+        // Sağ: Kapat (Close) Butonu
+        GestureDetector(
+          onTap: onClose,
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.charcoal.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.close_rounded,
+                size: 16, color: AppColors.charcoal.withValues(alpha: 0.4)),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildWeekdayLabels() {
+  Widget _buildHorizontalWeekdayLabels() {
     const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: weekdays.map((day) {
-        return SizedBox(
-          width: 28,
+        return Expanded(
           child: Text(
             day,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.charcoal.withValues(alpha: 0.5),
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              color: AppColors.charcoal.withValues(alpha: 0.3),
             ),
           ),
         );
@@ -144,77 +179,71 @@ class BentoCalendarView extends StatelessWidget {
     );
   }
 
-  Widget _buildDayGrid() {
-    // Get first day of month and calculate grid
-    final firstDayOfMonth =
-        DateTime(displayedMonth.year, displayedMonth.month, 1);
-    final lastDayOfMonth =
-        DateTime(displayedMonth.year, displayedMonth.month + 1, 0);
-    final daysInMonth = lastDayOfMonth.day;
+  Widget _buildHeatmapGrid() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final firstDayOfMonth =
+            DateTime(displayedMonth.year, displayedMonth.month, 1);
+        final lastDayOfMonth =
+            DateTime(displayedMonth.year, displayedMonth.month + 1, 0);
+        final daysInMonth = lastDayOfMonth.day;
+        final startingWeekday = firstDayOfMonth.weekday; // 1-7 (Mon=1)
+        final leadingEmptyDays = startingWeekday - 1;
 
-    // Monday = 1, Sunday = 7. We want Monday as first day.
-    final startingWeekday = firstDayOfMonth.weekday; // 1-7
-    final leadingEmptyDays = startingWeekday - 1;
+        const crossAxisCount = 7;
+        const mainAxisSpacing = 2.0;
+        const crossAxisSpacing = 6.0;
+        const childAspectRatio = 1.4;
 
-    final totalCells = leadingEmptyDays + daysInMonth;
-    final rows = (totalCells / 7).ceil();
-
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 7,
-        childAspectRatio: 1.0,
-        mainAxisSpacing: 4,
-        crossAxisSpacing: 4,
-      ),
-      itemCount: rows * 7,
-      itemBuilder: (context, index) {
-        if (index < leadingEmptyDays) {
-          return const SizedBox.shrink();
-        }
-
-        final dayNumber = index - leadingEmptyDays + 1;
-        if (dayNumber > daysInMonth) {
-          return const SizedBox.shrink();
-        }
-
-        final date =
-            DateTime(displayedMonth.year, displayedMonth.month, dayNumber);
-        final isSelected = _isSameDay(date, selectedDate);
-        final isToday = _isSameDay(date, DateTime.now());
-
-        // Get completion ratio for heatmap
-        final normalizedDate = DateTime(date.year, date.month, date.day);
-        final completion = completionData[normalizedDate] ?? 0.0;
+        // Hesaplamalar
+        final cellWidth =
+            (constraints.maxWidth - (crossAxisSpacing * (crossAxisCount - 1))) /
+                crossAxisCount;
+        final cellHeight = cellWidth / childAspectRatio;
+        final totalRows =
+            ((leadingEmptyDays + daysInMonth) / crossAxisCount).ceil();
+        final totalHeight =
+            (totalRows * cellHeight) + ((totalRows - 1) * mainAxisSpacing);
 
         return GestureDetector(
-          onTap: () => onDateSelected(date),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppColors.darkGreen
-                  : (completion > 0
-                      ? AppColors.lightGreen
-                          .withValues(alpha: 0.2 + (completion * 0.4))
-                      : Colors.transparent),
-              borderRadius: BorderRadius.circular(8),
-              border: isToday && !isSelected
-                  ? Border.all(color: AppColors.darkGreen, width: 1.5)
-                  : null,
-            ),
-            child: Center(
-              child: Text(
-                dayNumber.toString(),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight:
-                      isSelected || isToday ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected
-                      ? Colors.white
-                      : (completion > 0.7
-                          ? AppColors.darkGreen
-                          : AppColors.charcoal),
-                ),
+          onTapUp: (details) {
+            final x = details.localPosition.dx;
+            final y = details.localPosition.dy;
+
+            final col = (x / (cellWidth + crossAxisSpacing)).floor();
+            final row = (y / (cellHeight + mainAxisSpacing)).floor();
+
+            if (col >= 0 && col < 7) {
+              final index = (row * 7) + col;
+              final dayNumber = index - leadingEmptyDays + 1;
+
+              if (dayNumber >= 1 && dayNumber <= daysInMonth) {
+                final date = DateTime(
+                    displayedMonth.year, displayedMonth.month, dayNumber);
+                final now = DateTime.now();
+                // Gelecek tarih kontrolü
+                if (!date.isAfter(DateTime(now.year, now.month, now.day))) {
+                  onDateSelected(date);
+                }
+              }
+            }
+          },
+          child: RepaintBoundary(
+            child: CustomPaint(
+              size: Size(constraints.maxWidth, totalHeight),
+              isComplex: true, // Hint to engine that this is expensive
+              willChange:
+                  false, // The painter only changes when dependencies change
+              painter: _HeatmapPainter(
+                displayedMonth: displayedMonth,
+                selectedDate: selectedDate,
+                completionData: completionData,
+                leadingEmptyDays: leadingEmptyDays,
+                daysInMonth: daysInMonth,
+                cellWidth: cellWidth,
+                cellHeight: cellHeight,
+                mainAxisSpacing: mainAxisSpacing,
+                crossAxisSpacing: crossAxisSpacing,
               ),
             ),
           ),
@@ -223,7 +252,106 @@ class BentoCalendarView extends StatelessWidget {
     );
   }
 
+  Widget _buildMinimalLegend() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ...[0.05, 0.3, 0.5, 0.8, 1.0].map((alpha) => Container(
+              width: 6,
+              height: 6,
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              decoration: BoxDecoration(
+                color: AppColors.darkGreen.withValues(alpha: alpha),
+                borderRadius: BorderRadius.circular(1.5),
+              ),
+            )),
+      ],
+    );
+  }
+}
+
+class _HeatmapPainter extends CustomPainter {
+  final DateTime displayedMonth;
+  final DateTime selectedDate;
+  final Map<DateTime, double> completionData;
+  final int leadingEmptyDays;
+  final int daysInMonth;
+  final double cellWidth;
+  final double cellHeight;
+  final double mainAxisSpacing;
+  final double crossAxisSpacing;
+
+  _HeatmapPainter({
+    required this.displayedMonth,
+    required this.selectedDate,
+    required this.completionData,
+    required this.leadingEmptyDays,
+    required this.daysInMonth,
+    required this.cellWidth,
+    required this.cellHeight,
+    required this.mainAxisSpacing,
+    required this.crossAxisSpacing,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    for (int index = 0; index < leadingEmptyDays + daysInMonth; index++) {
+      if (index < leadingEmptyDays) continue;
+
+      final dayNumber = index - leadingEmptyDays + 1;
+      final date =
+          DateTime(displayedMonth.year, displayedMonth.month, dayNumber);
+      final isFuture = date.isAfter(today);
+      final isSelected = _isSameDay(date, selectedDate);
+      final isToday = _isSameDay(date, today);
+      final completion = completionData[date] ?? 0.0;
+
+      final row = index ~/ 7;
+      final col = index % 7;
+
+      final left = col * (cellWidth + crossAxisSpacing);
+      final top = row * (cellHeight + mainAxisSpacing);
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(left, top, cellWidth, cellHeight),
+        const Radius.circular(4),
+      );
+
+      // Hücre Rengi
+      final Paint paint = Paint()..style = PaintingStyle.fill;
+      if (isFuture) {
+        paint.color = AppColors.charcoal.withValues(alpha: 0.04);
+      } else if (isSelected) {
+        paint.color = AppColors.darkGreen;
+      } else if (completion == 0) {
+        paint.color = AppColors.charcoal.withValues(alpha: 0.06);
+      } else {
+        paint.color =
+            AppColors.darkGreen.withValues(alpha: 0.2 + (completion * 0.8));
+      }
+      canvas.drawRRect(rect, paint);
+
+      // Border (Bugün veya Seçili)
+      if (isToday || (isSelected && !isFuture)) {
+        final Paint borderPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = isToday ? 1.5 : 2.0
+          ..color = AppColors.darkGreen;
+        canvas.drawRRect(rect, borderPaint);
+      }
+    }
+  }
+
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  @override
+  bool shouldRepaint(covariant _HeatmapPainter oldDelegate) {
+    return oldDelegate.displayedMonth != displayedMonth ||
+        oldDelegate.selectedDate != selectedDate ||
+        oldDelegate.completionData != completionData;
   }
 }

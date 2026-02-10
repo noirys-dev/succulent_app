@@ -70,30 +70,54 @@ class _FlipCardBentoState extends State<FlipCardBento>
 
   @override
   Widget build(BuildContext context) {
+    // 1. Dynamic Animation Engine: Check for 'reduce motion'
+    // This covers Low Power Mode functionality on iOS/Android if the system maps it to reduce motion,
+    // or if the user explicitly enables it.
+    final bool reduceMotion = MediaQuery.of(context).disableAnimations;
+
+    if (reduceMotion) {
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        child: widget.isFlipped
+            ? KeyedSubtree(key: const ValueKey('back'), child: widget.back)
+            : KeyedSubtree(key: const ValueKey('front'), child: widget.front),
+      );
+    }
+
     return RepaintBoundary(
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
-          // Calculate rotation angle: 0 to pi (180 degrees)
-          final angle = _animation.value * math.pi;
+          final double value = _animation.value;
+          final double angle = value * math.pi;
 
-          // Determine which side to show
-          // Show front when angle < pi/2 (less than 90 degrees)
-          final showFront = angle < math.pi / 2;
+          // 2. Frame Rate Optimization: Visibility check
+          // At exactly 90 degrees (pi/2), the card is invisible (thin line).
+          // We can skip rendering content to save GPU cycles.
+          final bool isFrontVisible = angle < (math.pi / 2);
+          final bool isEdgeOn =
+              (angle - (math.pi / 2)).abs() < 0.05; // ~3 degrees margin
+
+          if (isEdgeOn) {
+            return const SizedBox(); // Render nothing at the very edge
+          }
+
+          final Matrix4 transform = Matrix4.identity()
+            ..setEntry(3, 2, 0.001) // Perspective
+            ..rotateY(angle);
 
           return Transform(
             alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001) // Perspective
-              ..rotateY(angle),
-            child: showFront
+            transform: transform,
+            child: isFrontVisible
                 ? widget.front
                 : Transform(
                     alignment: Alignment.center,
                     transform: Matrix4.identity()..rotateY(math.pi),
-                    child: _hasShownBack
-                        ? widget.back
-                        : const SizedBox.shrink(), // Lazy load
+                    child: _hasShownBack ? widget.back : const SizedBox(),
                   ),
           );
         },

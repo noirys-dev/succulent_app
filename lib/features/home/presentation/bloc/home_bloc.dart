@@ -25,17 +25,21 @@ class HomeBloc extends HydratedBloc<HomeEvent, HomeState> {
   }
 
   void _onChangeDate(ChangeDateEvent event, Emitter<HomeState> emit) {
-    emit(state.copyWith(selectedDate: event.date, isCalendarOpen: false));
+    // Sadece tarihi güncelle, takvim durumunu değiştirme (açıksa açık kalsın)
+    emit(state.copyWith(selectedDate: event.date));
   }
 
   void _onToggleCalendar(ToggleCalendarEvent event, Emitter<HomeState> emit) {
     final newIsOpen = !state.isCalendarOpen;
     if (newIsOpen) {
-      // When opening calendar, compute completion data for displayed month
-      final completionData = _computeMonthCompletionData(state.displayedMonth);
+      final now = DateTime.now();
+      // Takvim açıldığında, gösterilen ayı ve seçili günü bugüne sıfırla
+      final completionData = _computeMonthCompletionData(now);
       emit(state.copyWith(
         isCalendarOpen: true,
         monthCompletionData: completionData,
+        selectedDate: now,
+        displayedMonth: now,
       ));
     } else {
       emit(state.copyWith(isCalendarOpen: false));

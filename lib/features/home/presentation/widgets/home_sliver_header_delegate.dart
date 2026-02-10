@@ -124,15 +124,27 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
                   selectedDate: selectedDate,
                   completionData: completionData,
                   onDateSelected: onDateSelected,
+                  // Sınır kontrolleri
+                  canGoPrev: displayedMonth.isAfter(DateTime(2025, 1, 1)),
+                  canGoNext: displayedMonth.year < DateTime.now().year ||
+                      displayedMonth.month < 12,
                   onMonthPrev: () {
                     final prevMonth = DateTime(
                         displayedMonth.year, displayedMonth.month - 1, 1);
-                    onChangeMonth(prevMonth);
+                    if (!prevMonth.isBefore(DateTime(2025, 1, 1))) {
+                      onChangeMonth(prevMonth);
+                    }
                   },
                   onMonthNext: () {
                     final nextMonth = DateTime(
                         displayedMonth.year, displayedMonth.month + 1, 1);
-                    onChangeMonth(nextMonth);
+                    final maxDate = DateTime(DateTime.now().year, 12, 1);
+                    if (!nextMonth.isAfter(maxDate)) {
+                      onChangeMonth(nextMonth);
+                    }
+                  },
+                  onTodayPress: () {
+                    onChangeMonth(DateTime.now());
                   },
                   onClose: onToggleCalendar,
                 ),
@@ -140,7 +152,19 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // 3. DateStrip (only visible when calendar is closed)
+          // 3. Info Card (Visible ONLY when calendar is open)
+          if (isCalendarOpen)
+            Positioned(
+              top: topPadding + 330,
+              left: 0,
+              right: 0,
+              child: Opacity(
+                opacity: fadeOut,
+                child: _buildSelectedDayDetails(),
+              ),
+            ),
+
+          // 4. DateStrip (only visible when calendar is closed)
           if (!isCalendarOpen)
             Positioned(
               top: topPadding + 340,
@@ -261,7 +285,7 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
                         strokeCap: StrokeCap.round,
                       ),
                     ),
-                    Center(
+                    const Center(
                       child: Text(
                         '🌱',
                         style: TextStyle(fontSize: 160 * 0.45),
@@ -422,6 +446,106 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   double get minExtent => 60.0 + topPadding; // Collapsed height
+
+  Widget _buildSelectedDayDetails() {
+    final monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    final dateStr =
+        "${selectedDate.day} ${monthNames[selectedDate.month - 1]} ${selectedDate.year}";
+
+    final normalizedDate =
+        DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final completion = completionData[normalizedDate] ?? 0.0;
+
+    final now = DateTime.now();
+    final isFuture =
+        normalizedDate.isAfter(DateTime(now.year, now.month, now.day));
+
+    String statusText;
+    Color statusColor;
+    IconData statusIcon;
+
+    if (isFuture) {
+      statusText = "Not Available Yet";
+      statusColor = AppColors.charcoal.withValues(alpha: 0.4);
+      statusIcon = Icons.access_time_rounded;
+    } else if (completion == 0) {
+      statusText = "No Habits Done";
+      statusColor = AppColors.charcoal.withValues(alpha: 0.6);
+      statusIcon = Icons.info_outline_rounded;
+    } else {
+      statusText = "${(completion * 100).toInt()}% Done";
+      statusColor = AppColors.darkGreen;
+      statusIcon = Icons.check_circle_outline_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: statusColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dateStr,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.charcoal,
+                ),
+              ),
+              Text(
+                HomeScreenHelpers.isSameDay(selectedDate, now)
+                    ? 'Today'
+                    : (isFuture ? 'Future' : 'Timeline'),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.charcoal.withValues(alpha: 0.5),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Icon(statusIcon, size: 14, color: statusColor),
+              const SizedBox(width: 4),
+              Text(
+                statusText,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: statusColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   bool shouldRebuild(covariant HomeSliverHeaderDelegate oldDelegate) {
