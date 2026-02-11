@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
+import 'package:succulent_app/core/optimization/app_performance.dart';
 import 'package:succulent_app/features/home/presentation/widgets/pomodoro_tile.dart';
 
 class DurationPickerSheet extends StatefulWidget {
@@ -66,6 +67,7 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final perf = AppPerformance.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -105,7 +107,7 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
 
               Expanded(
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
+                  duration: perf.shortDuration,
                   child: viewMode == 0
                       ? _buildCustomWheelView()
                       : _buildPresetsView(),
@@ -222,11 +224,12 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
   }
 
   Widget _buildSegmentButton(String title, bool isActive, VoidCallback onTap) {
+    final perf = AppPerformance.of(context);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: perf.microDuration,
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isActive ? Colors.white : Colors.transparent,

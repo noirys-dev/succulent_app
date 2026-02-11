@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
+import 'package:succulent_app/core/optimization/app_performance.dart';
 
 class FocusScreen extends StatefulWidget {
   final String taskTitle;
@@ -531,7 +532,7 @@ class _FocusScreenState extends State<FocusScreen> {
                   ),
                   const SizedBox(height: 28),
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
+                    duration: AppPerformance.of(context).shortDuration,
                     switchInCurve: Curves.easeOut,
                     switchOutCurve: Curves.easeIn,
                     child: Builder(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
+import 'package:succulent_app/core/optimization/app_performance.dart';
 
 class PomodoroTile extends StatelessWidget {
   final String title;
@@ -19,6 +20,7 @@ class PomodoroTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final perf = AppPerformance.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GestureDetector(
@@ -34,8 +36,8 @@ class PomodoroTile extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: AppColors.darkGreen.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                blurRadius: perf.shadowBlurRadiusSmall,
+                offset: Offset(0, perf.shadowOffsetYSmall),
               ),
             ],
           ),

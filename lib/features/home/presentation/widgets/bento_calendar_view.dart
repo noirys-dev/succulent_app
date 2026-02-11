@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
+import 'package:succulent_app/core/optimization/app_performance.dart';
 
 /// Calendar view for the back of the Bento flip card.
 /// Shows a month grid with day selection and completion heatmap.
@@ -56,47 +57,53 @@ class BentoCalendarView extends StatelessWidget {
           onMonthNext(); // Sola kaydır -> Sonraki Ay
         }
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.9),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.darkGreen.withValues(alpha: 0.04),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Stack(
-          // Stack kullanarak öğeleri üst üste ve sabitliyoruz
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Column(
-                children: [
-                  const SizedBox(height: 2), // 6 -> 2
-                  _buildHeader(monthName),
-                  const SizedBox(height: 4), // 8 -> 4
-                  _buildHorizontalWeekdayLabels(),
-                  const SizedBox(height: 2),
-                  _buildHeatmapGrid(),
-                ],
+      child: Builder(
+        builder: (context) {
+          final perf = AppPerformance.of(context);
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.9),
+                width: 2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.darkGreen.withValues(alpha: 0.04),
+                  blurRadius: perf.shadowBlurRadius,
+                  offset: Offset(0, perf.shadowOffsetY),
+                ),
+              ],
             ),
-            // Skalayı kartın en altına sabitliyoruz (Hücrelerden bağımsız)
-            Positioned(
-              bottom: 8,
-              left: 0,
-              right: 0,
-              child: Center(child: _buildMinimalLegend()),
+            child: Stack(
+              // Stack kullanarak öğeleri üst üste ve sabitliyoruz
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 2), // 6 -> 2
+                      _buildHeader(monthName),
+                      const SizedBox(height: 4), // 8 -> 4
+                      _buildHorizontalWeekdayLabels(),
+                      const SizedBox(height: 2),
+                      _buildHeatmapGrid(),
+                    ],
+                  ),
+                ),
+                // Skalayı kartın en altına sabitliyoruz (Hücrelerden bağımsız)
+                Positioned(
+                  bottom: 8,
+                  left: 0,
+                  right: 0,
+                  child: Center(child: _buildMinimalLegend()),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
+import 'package:succulent_app/core/optimization/app_performance.dart';
 import 'package:succulent_app/core/classification/category.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:succulent_app/features/home/presentation/bloc/home_bloc.dart';
@@ -82,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return BlocBuilder<HomeBloc, HomeState>(
       builder: (context, state) {
+        final perf = AppPerformance.of(context);
         final filteredHabits = state.habits
             .where((h) =>
                 HomeScreenHelpers.isSameDay(h.createdAt, state.selectedDate))
@@ -169,8 +170,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     right: 0,
                     height: MediaQuery.of(context).padding.top,
                     child: ClipRect(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: perf.adaptiveBlur(
+                        sigmaX: perf.glassSigma,
+                        sigmaY: perf.glassSigma,
                         child: Container(
                           color: Colors.white.withValues(alpha: 0.5),
                         ),
@@ -181,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: AnimatedPadding(
-                    duration: const Duration(milliseconds: 500),
+                    duration: perf.mediumDuration,
                     curve: Curves.easeOutQuart,
                     padding: EdgeInsets.only(
                         bottom: _isInputOpen || !_isScrolled
@@ -194,10 +196,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? const BorderRadius.vertical(
                                   top: Radius.circular(24))
                               : BorderRadius.circular(40)),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                      child: perf.adaptiveBlur(
+                        sigmaX: perf.glassSigmaLight,
+                        sigmaY: perf.glassSigmaLight,
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 500),
+                          duration: perf.mediumDuration,
                           curve: _isInputOpen
                               ? Curves.easeOutBack
                               : Curves.easeOutQuart,
@@ -222,8 +225,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               BoxShadow(
                                 color:
                                     AppColors.darkGreen.withValues(alpha: 0.15),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
+                                blurRadius: perf.shadowBlurRadius,
+                                offset: Offset(0, perf.shadowOffsetY),
                               ),
                             ],
                           ),
@@ -231,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Stack(
                             children: [
                               AnimatedOpacity(
-                                duration: const Duration(milliseconds: 200),
+                                duration: perf.microDuration,
                                 opacity: _isInputOpen ? 0.0 : 1.0,
                                 curve: _isInputOpen
                                     ? const Interval(0.0, 0.2,
@@ -247,9 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           .read<HomeBloc>()
                                           .add(const ClearCategoryEvent());
                                       setState(() => _isInputOpen = true);
-                                      Future.delayed(
-                                          const Duration(milliseconds: 550),
-                                          () {
+                                      Future.delayed(perf.mediumDuration, () {
                                         if (mounted && _isInputOpen) {
                                           _habitFocusNode.requestFocus();
                                         }
@@ -259,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               AnimatedOpacity(
-                                duration: const Duration(milliseconds: 500),
+                                duration: perf.mediumDuration,
                                 opacity: _isInputOpen ? 1.0 : 0.0,
                                 curve: _isInputOpen
                                     ? const Interval(0.6, 1.0,

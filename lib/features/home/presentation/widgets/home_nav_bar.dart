@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
+import 'package:succulent_app/core/optimization/app_performance.dart';
 
 class HomeNavBar extends StatelessWidget {
   final bool isScrolled;
@@ -13,6 +14,7 @@ class HomeNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final perf = AppPerformance.of(context);
     final double otherIconSize = isScrolled ? 34 : 28;
     return Container(
       width: double.infinity,
@@ -40,8 +42,8 @@ class HomeNavBar extends StatelessWidget {
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      blurRadius: perf.shadowBlurRadiusSmall,
+                      offset: Offset(0, perf.shadowOffsetYSmall),
                     )
                   ],
                 ),

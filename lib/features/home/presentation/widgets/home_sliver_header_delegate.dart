@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
+import 'package:succulent_app/core/optimization/app_performance.dart';
 import 'dart:math' as math;
 import '../pages/home_screen_helpers.dart';
 import 'flip_card_bento.dart';
@@ -43,6 +44,7 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
     // 0.0 = Fully Expanded, 1.0 = Fully Collapsed
     final double progress = shrinkOffset / (maxExtent - minExtent);
     final double clampedProgress = progress.clamp(0.0, 1.0);
+    final perf = AppPerformance.of(context);
 
     // Fade out expanded content
     final double fadeOut = (1.0 - clampedProgress * 2).clamp(0.0, 1.0);
@@ -118,7 +120,7 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
               child: FlipCardBento(
                 isFlipped: isCalendarOpen,
                 onFlipRequested: onToggleCalendar,
-                front: _buildBentoFront(currentPlantSize),
+                front: _buildBentoFront(currentPlantSize, perf),
                 back: BentoCalendarView(
                   displayedMonth: displayedMonth,
                   selectedDate: selectedDate,
@@ -173,7 +175,7 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
               height: 40,
               child: Opacity(
                 opacity: fadeOut,
-                child: _buildDateStrip(),
+                child: _buildDateStrip(perf),
               ),
             ),
 
@@ -239,7 +241,7 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
     );
   }
 
-  Widget _buildBentoFront(double plantSize) {
+  Widget _buildBentoFront(double plantSize, AppPerformance perf) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.7),
@@ -251,8 +253,8 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
         boxShadow: [
           BoxShadow(
             color: AppColors.darkGreen.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            blurRadius: perf.shadowBlurRadius,
+            offset: Offset(0, perf.shadowOffsetY),
           ),
         ],
       ),
@@ -366,7 +368,7 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
     );
   }
 
-  Widget _buildDateStrip() {
+  Widget _buildDateStrip(AppPerformance perf) {
     final today = DateTime.now();
     final dates = List.generate(7, (index) {
       return today.subtract(Duration(days: 6 - index));
@@ -385,7 +387,7 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
         return GestureDetector(
           onTap: () => onDateSelected(date),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: perf.microDuration,
             width: 40,
             decoration: BoxDecoration(
               color: isSelected ? AppColors.darkGreen : Colors.transparent,

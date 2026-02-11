@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:succulent_app/core/optimization/app_performance.dart';
 
 /// A 3D flip card widget with front and back sides.
 /// Optimized with RepaintBoundary and lazy back-side loading.
@@ -8,7 +9,6 @@ class FlipCardBento extends StatefulWidget {
   final Widget back;
   final bool isFlipped;
   final VoidCallback onFlipRequested;
-  final Duration animationDuration;
 
   const FlipCardBento({
     super.key,
@@ -16,7 +16,6 @@ class FlipCardBento extends StatefulWidget {
     required this.back,
     required this.isFlipped,
     required this.onFlipRequested,
-    this.animationDuration = const Duration(milliseconds: 600),
   });
 
   @override
@@ -34,8 +33,9 @@ class _FlipCardBentoState extends State<FlipCardBento>
   @override
   void initState() {
     super.initState();
+    // Duration will be set in didChangeDependencies when context is available
     _controller = AnimationController(
-      duration: widget.animationDuration,
+      duration: const Duration(milliseconds: 600), // default, overridden below
       vsync: this,
     );
 
@@ -47,6 +47,13 @@ class _FlipCardBentoState extends State<FlipCardBento>
       _controller.value = 1.0;
       _hasShownBack = true;
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final perf = AppPerformance.of(context);
+    _controller.duration = perf.flipDuration;
   }
 
   @override
@@ -70,14 +77,12 @@ class _FlipCardBentoState extends State<FlipCardBento>
 
   @override
   Widget build(BuildContext context) {
-    // 1. Dynamic Animation Engine: Check for 'reduce motion'
-    // This covers Low Power Mode functionality on iOS/Android if the system maps it to reduce motion,
-    // or if the user explicitly enables it.
-    final bool reduceMotion = MediaQuery.of(context).disableAnimations;
+    final perf = AppPerformance.of(context);
 
-    if (reduceMotion) {
+    // Low-mode: skip 3D transforms entirely, use a lightweight fade switch
+    if (!perf.enable3DFlip) {
       return AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
+        duration: perf.shortDuration,
         transitionBuilder: (Widget child, Animation<double> animation) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -94,19 +99,17 @@ class _FlipCardBentoState extends State<FlipCardBento>
           final double value = _animation.value;
           final double angle = value * math.pi;
 
-          // 2. Frame Rate Optimization: Visibility check
-          // At exactly 90 degrees (pi/2), the card is invisible (thin line).
-          // We can skip rendering content to save GPU cycles.
+          // Frame Rate Optimization: skip rendering at exact edge-on angle
           final bool isFrontVisible = angle < (math.pi / 2);
           final bool isEdgeOn =
               (angle - (math.pi / 2)).abs() < 0.05; // ~3 degrees margin
 
           if (isEdgeOn) {
-            return const SizedBox(); // Render nothing at the very edge
+            return const SizedBox();
           }
 
           final Matrix4 transform = Matrix4.identity()
-            ..setEntry(3, 2, 0.001) // Perspective
+            ..setEntry(3, 2, 0.001)
             ..rotateY(angle);
 
           return Transform(

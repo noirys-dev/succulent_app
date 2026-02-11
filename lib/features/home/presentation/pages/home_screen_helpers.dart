@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:succulent_app/core/classification/category.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
+import 'package:succulent_app/core/optimization/app_performance.dart';
 
 /// Helper methods for HomeScreen state and UI utilities
 class HomeScreenHelpers {
@@ -47,15 +48,17 @@ class HomeScreenHelpers {
 
   /// Build segment button for duration picker
   static Widget buildSegmentButton({
+    required BuildContext context,
     required String title,
     required bool isActive,
     required VoidCallback onTap,
   }) {
+    final perf = AppPerformance.of(context);
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+          duration: perf.shortDuration,
           curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
@@ -65,14 +68,14 @@ class HomeScreenHelpers {
                 ? [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+                      blurRadius: perf.shadowBlurRadiusSmall,
+                      offset: Offset(0, perf.shadowOffsetYSmall),
                     )
                   ]
                 : [],
           ),
           child: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 300),
+            duration: perf.shortDuration,
             curve: Curves.easeOut,
             style: TextStyle(
               fontSize: 14,
@@ -93,12 +96,14 @@ class HomeScreenHelpers {
 
   /// Build wheel widget for duration picker
   static Widget buildWheel({
+    required BuildContext context,
     required FixedExtentScrollController controller,
     required List<int> items,
     required int selectedItem,
     required String label,
     required ValueChanged<int> onChanged,
   }) {
+    final perf = AppPerformance.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -118,7 +123,7 @@ class HomeScreenHelpers {
                 final isSelected = selectedItem == val;
                 return Center(
                   child: AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 200),
+                    duration: perf.microDuration,
                     style: TextStyle(
                       fontSize: isSelected ? 24 : 18,
                       fontWeight:
