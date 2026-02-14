@@ -153,11 +153,19 @@ class HomeScreenHelpers {
 
   static Duration? parseDuration(String text) {
     if (text.isEmpty) return null;
-    final match = RegExp(r'(\d+)?h?\.?\s*(\d+)?m?').firstMatch(text.trim());
-    if (match == null) return null;
+    final hMatch = RegExp(r'(\d+)h').firstMatch(text);
+    final mMatch = RegExp(r'(\d+)m').firstMatch(text);
 
-    final hours = match.group(1) != null ? int.parse(match.group(1)!) : 0;
-    final minutes = match.group(2) != null ? int.parse(match.group(2)!) : 0;
+    final hours = hMatch != null ? int.parse(hMatch.group(1)!) : 0;
+    final minutes = mMatch != null ? int.parse(mMatch.group(1)!) : 0;
+
+    if (hMatch == null && mMatch == null) {
+      final onlyNum = RegExp(r'(\d+)').firstMatch(text);
+      if (onlyNum != null) {
+        return Duration(minutes: int.parse(onlyNum.group(1)!));
+      }
+      return null;
+    }
 
     return Duration(hours: hours, minutes: minutes);
   }

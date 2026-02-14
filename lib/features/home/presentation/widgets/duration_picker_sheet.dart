@@ -40,14 +40,23 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
     selectedHours = widget.initialDuration.inHours;
     selectedMinutes = widget.initialDuration.inMinutes.remainder(60);
 
-    // Başlangıç kontrolü: Eğer 0h ve 0m geldiyse, dakikayı 10'a çek
+    // Başlangıç kontrolü:
+    // 0h seçiliyken dakika minimum 10 olmalı.
+    if (selectedHours == 0 && selectedMinutes < 10) {
+      selectedMinutes = 10;
+    }
+
+    // Eğer dakika listede yoksa (örn: 15, 25 gibi ara değerler geldiyse), en yakın veya varsayılan değere çek.
     if (!_minutesList.contains(selectedMinutes)) {
+      // Basitçe en yakını veya ilkini seçebiliriz. Şimdilik ilkini (varsayılan) seçiyoruz.
       selectedMinutes = _minutesList.first;
     }
 
     hoursController = FixedExtentScrollController(
       initialItem: hoursList.indexOf(selectedHours),
     );
+
+    // Controller'ı DÜZELTİLMİŞ selectedMinutes'ın indeksine göre başlat
     minutesController = FixedExtentScrollController(
       initialItem: _minutesList.indexOf(selectedMinutes),
     );
@@ -111,57 +120,155 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
                 ),
               ),
               const SizedBox(height: 24),
-              // Segmented Control
+              // Custom Sliding Segmented Control
               Container(
+                height: 50,
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.charcoal.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(24),
+                  color: AppColors.charcoal.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(25),
                 ),
-                child: Row(
+                child: Stack(
                   children: [
-                    _buildSegmentButton('Custom', viewMode == 0,
-                        () => setState(() => viewMode = 0)),
-                    _buildSegmentButton('Presets', viewMode == 1,
-                        () => setState(() => viewMode = 1)),
+                    // Sliding White Pill
+                    AnimatedAlign(
+                      alignment: viewMode == 0
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      child: FractionallySizedBox(
+                        widthFactor: 0.5,
+                        heightFactor: 1.0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(21),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    AppColors.charcoal.withValues(alpha: 0.04),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Clickable Text Labels
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => setState(() => viewMode = 0),
+                            child: Center(
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 200),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: viewMode == 0
+                                      ? AppColors.darkGreen
+                                      : AppColors.charcoal
+                                          .withValues(alpha: 0.6),
+                                  fontFamily:
+                                      'Outfit', // Ensure consistent font
+                                ),
+                                child: const Text('Custom'),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => setState(() => viewMode = 1),
+                            child: Center(
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 200),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: viewMode == 1
+                                      ? AppColors.darkGreen
+                                      : AppColors.charcoal
+                                          .withValues(alpha: 0.6),
+                                  fontFamily: 'Outfit',
+                                ),
+                                child: const Text('Presets'),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
+              // Compact fixed height container
               SizedBox(
-                height: 200,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  child: viewMode == 0
-                      ? _buildCustomWheelView()
-                      : _buildPresetsView(),
-                ),
-              ),
-              if (viewMode == 0)
-                Padding(
-                  padding: const EdgeInsets.only(top: 24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          _applyDuration(selectedHours, selectedMinutes),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.darkGreen,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        'Confirm Duration',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700),
-                      ),
-                    ),
+                height: 250,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onHorizontalDragEnd: (details) {
+                    if (details.primaryVelocity! > 0) {
+                      // Swipe Right -> Custom
+                      if (viewMode != 0) setState(() => viewMode = 0);
+                    } else if (details.primaryVelocity! < 0) {
+                      // Swipe Left -> Presets
+                      if (viewMode != 1) setState(() => viewMode = 1);
+                    }
+                  },
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                    child: viewMode == 0
+                        ? Column(
+                            key: const ValueKey('custom'),
+                            children: [
+                              SizedBox(
+                                height: 160,
+                                child: _buildCustomWheelView(),
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 56,
+                                child: ElevatedButton(
+                                  onPressed: () => _applyDuration(
+                                      selectedHours, selectedMinutes),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.darkGreen,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Confirm Duration',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : KeyedSubtree(
+                            key: const ValueKey('presets'),
+                            child: _buildPresetsView(),
+                          ),
                   ),
                 ),
+              ),
             ],
           ),
         ),
@@ -194,9 +301,18 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
               onChanged: (val) {
                 setState(() {
                   selectedHours = val;
-                  if (!_minutesList.contains(selectedMinutes)) {
-                    selectedMinutes = _minutesList.first;
-                    // Re-sync controller if needed, though key change on minutes wheel handles most
+                  // Trigger default minute selection based on User Request:
+                  // 0h -> defaults to 10m (index 0)
+                  // 1h/2h -> defaults to 0m (index 0)
+                  selectedMinutes = _minutesList.first;
+
+                  // Crucial: Animate to index 0 to visually "reset" the wheel
+                  if (minutesController.hasClients) {
+                    minutesController.animateToItem(
+                      0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutQuart,
+                    );
                   }
                 });
               },
@@ -204,7 +320,7 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
             const SizedBox(width: 32),
             // Minutes Wheel
             _buildWheel(
-              key: ValueKey('minutes_wheel_for_hour_$selectedHours'),
+              // Key removed to prevent controller detachment
               controller: minutesController,
               items: _minutesList,
               selectedItem: selectedMinutes,
@@ -243,33 +359,6 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
             onTap: () => _applyDuration(1, 30),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSegmentButton(String title, bool isActive, VoidCallback onTap) {
-    final perf = AppPerformance.of(context);
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: perf.microDuration,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-              color: isActive
-                  ? AppColors.darkGreen
-                  : AppColors.charcoal.withValues(alpha: 0.6),
-            ),
-          ),
-        ),
       ),
     );
   }

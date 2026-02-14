@@ -36,13 +36,7 @@ class HomeScreenInputSection extends StatefulWidget {
 
 class _HomeScreenInputSectionState extends State<HomeScreenInputSection> {
   Duration? _parseDuration(String text) {
-    final match = RegExp(r'(\d+)?h?\.?\s*(\d+)?m?').firstMatch(text.trim());
-    if (match == null) return null;
-
-    final hours = match.group(1) != null ? int.parse(match.group(1)!) : 0;
-    final minutes = match.group(2) != null ? int.parse(match.group(2)!) : 0;
-
-    return Duration(hours: hours, minutes: minutes);
+    return HomeScreenHelpers.parseDuration(text);
   }
 
   @override
