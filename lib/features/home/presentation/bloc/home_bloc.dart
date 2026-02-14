@@ -148,6 +148,7 @@ class HomeBloc extends HydratedBloc<HomeEvent, HomeState> {
       final updated = existing.copyWith(
         title: event.title ?? existing.title,
         plannedDuration: event.plannedDuration ?? existing.plannedDuration,
+        category: event.category ?? existing.category,
       );
       await repository.updateHabit(updated);
       final updatedList =

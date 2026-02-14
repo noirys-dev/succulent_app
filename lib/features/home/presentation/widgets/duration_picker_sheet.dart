@@ -67,32 +67,56 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final perf = AppPerformance.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-        child: SizedBox(
-          height: 350, // Biraz daha geniş alan
+    const sheetColor = Color(0xFFFAF9F6); // Consistent Off-White
+    return Container(
+      decoration: BoxDecoration(
+        color: sheetColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        border: Border.all(
+          color: AppColors.lightGreen.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withValues(alpha: 0.05),
+            blurRadius: 30,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 12, 28, 28),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Center(
                 child: Container(
-                  width: 40,
-                  height: 4,
+                  width: 42,
+                  height: 5,
                   decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
+                    color: AppColors.charcoal.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(2.5),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-
+              const SizedBox(height: 24),
+              const Text(
+                'Set Duration',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.charcoal,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 24),
               // Segmented Control
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppColors.creme.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.charcoal.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: Row(
                   children: [
@@ -104,22 +128,21 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              Expanded(
+              SizedBox(
+                height: 200,
                 child: AnimatedSwitcher(
-                  duration: perf.shortDuration,
+                  duration: const Duration(milliseconds: 250),
                   child: viewMode == 0
                       ? _buildCustomWheelView()
                       : _buildPresetsView(),
                 ),
               ),
-
               if (viewMode == 0)
                 Padding(
-                  padding: const EdgeInsets.only(top: 16),
+                  padding: const EdgeInsets.only(top: 24),
                   child: SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: 56,
                     child: ElevatedButton(
                       onPressed: () =>
                           _applyDuration(selectedHours, selectedMinutes),
@@ -128,10 +151,14 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
-                      child: const Text('Set Duration',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      child: const Text(
+                        'Confirm Duration',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ),
                 ),
@@ -167,11 +194,9 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
               onChanged: (val) {
                 setState(() {
                   selectedHours = val;
-                  // Saat 0'a çekilirse ve o an dakika 0'daysa (artık listede yok), 10'a zıplat
                   if (!_minutesList.contains(selectedMinutes)) {
                     selectedMinutes = _minutesList.first;
-                    minutesController
-                        .jumpToItem(_minutesList.indexOf(selectedMinutes));
+                    // Re-sync controller if needed, though key change on minutes wheel handles most
                   }
                 });
               },
@@ -179,7 +204,6 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
             const SizedBox(width: 32),
             // Minutes Wheel
             _buildWheel(
-              // KRİTİK NOKTA: ValueKey sayesinde saat değiştikçe dakika çarkı temizlenip yeniden kurulur.
               key: ValueKey('minutes_wheel_for_hour_$selectedHours'),
               controller: minutesController,
               items: _minutesList,
@@ -258,45 +282,58 @@ class _DurationPickerSheetState extends State<DurationPickerSheet> {
     required String label,
     required ValueChanged<int> onChanged,
   }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 50,
-          child: ListWheelScrollView.useDelegate(
-            key: key,
-            controller: controller,
-            itemExtent: 40,
-            perspective: 0.005,
-            physics: const FixedExtentScrollPhysics(),
-            onSelectedItemChanged: (index) => onChanged(items[index]),
-            childDelegate: ListWheelChildBuilderDelegate(
-              childCount: items.length,
-              builder: (context, index) {
-                final val = items[index];
-                final isSelected = selectedItem == val;
-                return Center(
-                  child: Text(
-                    '$val',
-                    style: TextStyle(
-                      fontSize: isSelected ? 24 : 18,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected
-                          ? AppColors.darkGreen
-                          : AppColors.charcoal.withValues(alpha: 0.3),
-                    ),
-                  ),
-                );
+    return SizedBox(
+      width: 60,
+      height: 150,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 40,
+            child: ListWheelScrollView.useDelegate(
+              key: key,
+              controller: controller,
+              itemExtent: 40,
+              perspective: 0.005,
+              physics: const FixedExtentScrollPhysics(),
+              onSelectedItemChanged: (index) {
+                if (index >= 0 && index < items.length) {
+                  onChanged(items[index]);
+                }
               },
+              childDelegate: ListWheelChildBuilderDelegate(
+                childCount: items.length,
+                builder: (context, index) {
+                  final val = items[index];
+                  final isSelected = selectedItem == val;
+                  return Center(
+                    child: Text(
+                      '$val',
+                      style: TextStyle(
+                        fontSize: isSelected ? 24 : 18,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                        color: isSelected
+                            ? AppColors.darkGreen
+                            : AppColors.charcoal.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 4),
-        Text(label,
+          const SizedBox(width: 4),
+          Text(
+            label,
             style: const TextStyle(
-                fontWeight: FontWeight.w500, color: AppColors.charcoal)),
-      ],
+              fontWeight: FontWeight.w500,
+              color: AppColors.charcoal,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

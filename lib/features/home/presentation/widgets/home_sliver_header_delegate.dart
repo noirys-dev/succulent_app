@@ -169,10 +169,10 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
           // 4. DateStrip (only visible when calendar is closed)
           if (!isCalendarOpen)
             Positioned(
-              top: topPadding + 340,
-              left: 0,
-              right: 0,
-              height: 40,
+              top: topPadding + 328,
+              left: 24,
+              right: 24,
+              height: 52,
               child: Opacity(
                 opacity: fadeOut,
                 child: _buildDateStrip(perf),
@@ -369,64 +369,83 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   Widget _buildDateStrip(AppPerformance perf) {
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final today = DateTime.now();
     final dates = List.generate(7, (index) {
       return today.subtract(Duration(days: 6 - index));
     });
 
-    return ListView.separated(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      itemCount: dates.length,
-      separatorBuilder: (context, index) => const SizedBox(width: 10),
-      itemBuilder: (context, index) {
-        final date = dates[index];
-        final isSelected = HomeScreenHelpers.isSameDay(date, selectedDate);
-        final isToday = HomeScreenHelpers.isSameDay(date, today);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: dates.map((date) {
+          final isSelected = HomeScreenHelpers.isSameDay(date, selectedDate);
+          final isToday = HomeScreenHelpers.isSameDay(date, today);
+          final dayAbbr = weekdays[date.weekday - 1];
 
-        return GestureDetector(
-          onTap: () => onDateSelected(date),
-          child: AnimatedContainer(
-            duration: perf.microDuration,
-            width: 40,
-            decoration: BoxDecoration(
-              color: isSelected ? AppColors.darkGreen : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected
-                    ? AppColors.darkGreen
-                    : AppColors.charcoal.withValues(alpha: 0.08),
-                width: 1,
+          return GestureDetector(
+            onTap: () => onDateSelected(date),
+            child: AnimatedContainer(
+              duration: perf.microDuration,
+              width: 38,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.darkGreen : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
               ),
-            ),
-            child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  Text(
+                    dayAbbr.substring(0, 1),
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.7)
+                          : AppColors.charcoal.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  const SizedBox(height: 1),
                   Text(
                     date.day.toString(),
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : AppColors.charcoal,
+                      fontSize: 14,
+                      fontWeight: isSelected || isToday
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : (isToday
+                              ? AppColors.darkGreen
+                              : AppColors.charcoal.withValues(alpha: 0.7)),
                     ),
                   ),
+                  // Today indicator dot
                   if (isToday && !isSelected)
                     Container(
                       margin: const EdgeInsets.only(top: 2),
-                      width: 3,
-                      height: 3,
+                      width: 4,
+                      height: 4,
                       decoration: const BoxDecoration(
                         color: AppColors.darkGreen,
                         shape: BoxShape.circle,
                       ),
-                    ),
+                    )
+                  else
+                    const SizedBox(height: 4),
                 ],
               ),
             ),
-          ),
-        );
-      },
+          );
+        }).toList(),
+      ),
     );
   }
 

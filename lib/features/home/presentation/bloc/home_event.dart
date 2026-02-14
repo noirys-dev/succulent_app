@@ -67,11 +67,13 @@ class UpdateHabitEvent extends HomeEvent {
   final String id;
   final String? title;
   final Duration? plannedDuration;
+  final CategoryId? category;
 
-  const UpdateHabitEvent({required this.id, this.title, this.plannedDuration});
+  const UpdateHabitEvent(
+      {required this.id, this.title, this.plannedDuration, this.category});
 
   @override
-  List<Object?> get props => [id, title, plannedDuration];
+  List<Object?> get props => [id, title, plannedDuration, category];
 }
 
 class ChangeDateEvent extends HomeEvent {

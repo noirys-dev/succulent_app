@@ -200,8 +200,10 @@ class _FocusScreenState extends State<FocusScreen> {
 
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.creme.withValues(alpha: 0.45),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return StatefulBuilder(
@@ -279,8 +281,10 @@ class _FocusScreenState extends State<FocusScreen> {
   void _openSoundSheet() {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.creme.withValues(alpha: 0.45),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return SafeArea(

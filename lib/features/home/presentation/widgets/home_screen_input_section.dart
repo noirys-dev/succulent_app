@@ -79,42 +79,49 @@ class _HomeScreenInputSectionState extends State<HomeScreenInputSection> {
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                                color: AppColors.lightGreen
-                                    .withValues(alpha: 0.6)),
+                            borderSide: BorderSide.none,
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                                color: AppColors.lightGreen
-                                    .withValues(alpha: 0.6)),
+                            borderSide: BorderSide.none,
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide:
-                                const BorderSide(color: AppColors.darkGreen),
+                            borderSide: BorderSide(
+                              color: AppColors.darkGreen.withValues(alpha: 0.3),
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    OutlinedButton(
-                      onPressed: widget.onOpenDurationPicker,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.charcoal,
-                        side: BorderSide(
-                            color: AppColors.lightGreen.withValues(alpha: 0.6)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                    GestureDetector(
+                      onTap: widget.onOpenDurationPicker,
+                      child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
+                          horizontal: 16,
+                          vertical: 14,
                         ),
-                      ),
-                      child: Text(
-                        widget.selectedDuration,
-                        style: const TextStyle(fontSize: 13),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.charcoal.withValues(alpha: 0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          widget.selectedDuration,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.charcoal,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -122,30 +129,68 @@ class _HomeScreenInputSectionState extends State<HomeScreenInputSection> {
                 if ((currentState.suggestedCategory ??
                         currentState.selectedCategory) !=
                     null) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: GestureDetector(
-                      onTap: widget.onOpenCategorySheet,
-                      child: Chip(
-                        label: Text(
-                          HomeScreenHelpers.categoryLabel(
-                            currentState.selectedCategory ??
-                                currentState.suggestedCategory!,
+                      onTap: () {
+                        // Close keyboard to focus on sheet
+                        FocusScope.of(context).unfocus();
+                        widget.onOpenCategorySheet();
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: AppColors.lightGreen.withValues(alpha: 0.3),
+                            width: 1,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  AppColors.darkGreen.withValues(alpha: 0.05),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        backgroundColor:
-                            AppColors.lightGreen.withValues(alpha: 0.4),
-                        side: BorderSide(
-                          color: AppColors.darkGreen.withValues(alpha: 0.8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Icon: Sparkles for AI suggestion, Tag for manual selection
+                            Icon(
+                              currentState.selectedCategory != null
+                                  ? Icons.label_outline_rounded
+                                  : Icons.auto_awesome,
+                              size: 14,
+                              color: AppColors.darkGreen.withValues(alpha: 0.8),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              HomeScreenHelpers.categoryLabel(
+                                currentState.selectedCategory ??
+                                    currentState.suggestedCategory!,
+                              ),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.darkGreen,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 16,
+                              color: AppColors.charcoal.withValues(alpha: 0.4),
+                            ),
+                          ],
                         ),
-                        labelStyle: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.darkGreen.withValues(alpha: 0.9),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
                       ),
                     ),
                   ),

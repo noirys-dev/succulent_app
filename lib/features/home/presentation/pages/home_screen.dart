@@ -187,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     curve: Curves.easeOutQuart,
                     padding: EdgeInsets.only(
                         bottom: _isInputOpen || !_isScrolled
-                            ? 30 + bottomPadding
+                            ? 16 + bottomPadding
                             : 0),
                     child: ClipRRect(
                       borderRadius: _isInputOpen
@@ -217,16 +217,26 @@ class _HomeScreenState extends State<HomeScreen> {
                               : (_isScrolled ? 60 + bottomPadding : 60),
                           decoration: BoxDecoration(
                             color: _isInputOpen
-                                ? Color.lerp(
-                                        Colors.white, AppColors.creme, 0.4)!
-                                    .withValues(alpha: 0.85)
+                                ? const Color(0xFFFAF9F6)
                                 : AppColors.darkGreen.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(32),
+                            border: _isInputOpen
+                                ? Border.all(
+                                    color: AppColors.lightGreen
+                                        .withValues(alpha: 0.3),
+                                    width: 1.5,
+                                  )
+                                : null,
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    AppColors.darkGreen.withValues(alpha: 0.15),
-                                blurRadius: perf.shadowBlurRadius,
-                                offset: Offset(0, perf.shadowOffsetY),
+                                color: _isInputOpen
+                                    ? AppColors.charcoal.withValues(alpha: 0.1)
+                                    : AppColors.darkGreen
+                                        .withValues(alpha: 0.15),
+                                blurRadius: _isInputOpen ? 30 : 20,
+                                offset: _isInputOpen
+                                    ? const Offset(0, 10)
+                                    : const Offset(0, 4),
                               ),
                             ],
                           ),
@@ -285,6 +295,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                           const Duration(minutes: 20);
                                       showModalBottomSheet(
                                         context: context,
+                                        isScrollControlled: true,
+                                        backgroundColor: const Color(
+                                            0xFFFAF9F6), // Kırık beyaz
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(32)),
+                                        ),
                                         builder: (_) => DurationPickerSheet(
                                           initialDuration: d,
                                           onDurationSelected: (val) {
@@ -317,31 +334,96 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openCategorySheet() {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFFFAF9F6), // Kırık beyaz
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (context) {
+        final state = context.read<HomeBloc>().state;
+        final currentCat = state.selectedCategory ?? state.suggestedCategory;
+
         return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              const SizedBox(height: 8),
-              for (final category in kCategories)
-                ListTile(
-                  title: Text(
-                    category.label,
-                    style: const TextStyle(fontSize: 15),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28, 12, 28, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 16),
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightGreen.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2.5),
                   ),
-                  onTap: () {
-                    // Update selection via bloc
-                    context
-                        .read<HomeBloc>()
-                        .add(SelectCategoryEvent(category.id));
-                    Navigator.of(context).pop();
-                  },
                 ),
-              const SizedBox(height: 12),
-            ],
+                const SizedBox(height: 24),
+                const Text(
+                  'Choose a Category',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.charcoal,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: kCategories.map((category) {
+                      final isSelected = currentCat == category.id;
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            context
+                                .read<HomeBloc>()
+                                .add(SelectCategoryEvent(category.id));
+                            Navigator.of(context).pop();
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.darkGreen
+                                  : AppColors.creme.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.darkGreen
+                                    : Colors.transparent,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Text(
+                              category.label,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.charcoal.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         );
       },
@@ -353,8 +435,9 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: const Color(0xFFFAF9F6), // Kırık beyaz
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       builder: (context) => EditHabitSheet(entry: entry, index: index),
     );

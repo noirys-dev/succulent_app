@@ -45,7 +45,7 @@ class HabitCard extends StatelessWidget {
             vertical: 12,
           ),
           decoration: BoxDecoration(
-            color: AppColors.lightGreen.withValues(alpha: 0.45),
+            color: AppColors.lightGreen.withValues(alpha: 0.50),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: AppColors.darkGreen.withValues(alpha: 0.85),
