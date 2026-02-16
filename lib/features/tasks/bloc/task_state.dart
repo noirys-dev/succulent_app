@@ -1,12 +1,12 @@
 part of 'task_bloc.dart';
 
-class TaskState {
+class TaskState extends Equatable {
   final List<Task> tasks;
 
-  TaskState({required this.tasks});
+  const TaskState({required this.tasks});
 
   factory TaskState.initial() {
-    return TaskState(tasks: []);
+    return const TaskState(tasks: []);
   }
 
   TaskState copyWith({List<Task>? tasks}) {
@@ -16,13 +16,5 @@ class TaskState {
   }
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is TaskState &&
-        other.tasks.length == tasks.length &&
-        other.tasks.every((task) => tasks.contains(task));
-  }
-
-  @override
-  int get hashCode => tasks.hashCode;
+  List<Object> get props => [tasks];
 }

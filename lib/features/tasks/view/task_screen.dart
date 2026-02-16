@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:succulent_app/features/tasks/bloc/task_bloc.dart';
 import 'package:succulent_app/features/tasks/models/task.dart';
 import 'package:succulent_app/features/tasks/models/task_category.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
+import 'package:succulent_app/features/focus/presentation/pages/focus_screen.dart';
+import 'package:succulent_app/features/tasks/view/widgets/task_card.dart';
 
 class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key});
@@ -148,68 +151,64 @@ class _TaskScreenState extends State<TaskScreen> {
                   );
                 }
 
-                return ListView.builder(
+                return ReorderableListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: state.tasks.length,
+                  onReorder: (oldIndex, newIndex) {
+                    context
+                        .read<TaskBloc>()
+                        .add(ReorderTaskEvent(oldIndex, newIndex));
+                  },
+                  proxyDecorator: (child, index, animation) {
+                    return Material(
+                      color: Colors.transparent,
+                      elevation: 0,
+                      child: child,
+                    );
+                  },
                   itemBuilder: (context, index) {
                     final task = state.tasks[index];
-                    return Container(
+                    return TaskCard(
                       key: ValueKey(task.id),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: task.isCompleted
-                              ? AppColors.lightGreen
-                              : Colors.transparent,
-                          width: 1,
-                        ),
-                      ),
-                      child: ListTile(
-                        onTap: () {
-                          final updated = task.copyWith(
-                              isCompleted: !task.isCompleted,
-                              updatedAt: DateTime.now());
-                          context
-                              .read<TaskBloc>()
-                              .add(UpdateTaskEvent(updated));
-                        },
-                        leading: Icon(
-                          task.isCompleted
-                              ? Icons.check_circle
-                              : Icons.circle_outlined,
-                          color: task.isCompleted
-                              ? AppColors.darkGreen
-                              : AppColors.lightBrown,
-                        ),
-                        title: Text(
-                          task.title.toLowerCase(),
-                          style: TextStyle(
-                            color: task.isCompleted
-                                ? AppColors.charcoal.withValues(alpha: 0.4)
-                                : AppColors.charcoal,
-                            decoration: task.isCompleted
-                                ? TextDecoration.lineThrough
-                                : null,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        subtitle: Text(
-                          task.category.displayName.toLowerCase(),
-                          style: TextStyle(
-                            color: AppColors.darkBrown.withValues(alpha: 0.6),
-                            fontSize: 12,
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              color: AppColors.lightBrown, size: 20),
-                          onPressed: () {
-                            // Silme eventi eklenebilir
-                          },
-                        ),
-                      ),
+                      task: task,
+                      onToggle: () {
+                        final updated = task.copyWith(
+                            isCompleted: !task.isCompleted,
+                            updatedAt: DateTime.now());
+                        context.read<TaskBloc>().add(UpdateTaskEvent(updated));
+                      },
+                      onEdit: () => _showEditTaskDialog(context, task),
+                      onDelete: () {
+                        context.read<TaskBloc>().add(DeleteTaskEvent(task.id));
+                      },
+                      onPlayFocus: (task.durationMinutes != null &&
+                              task.durationMinutes! > 0)
+                          ? () async {
+                              final result = await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => FocusScreen(
+                                    taskTitle: task.title,
+                                    plannedDuration: Duration(
+                                        minutes: task.durationMinutes!),
+                                    taskIndex: index,
+                                  ),
+                                ),
+                              );
+
+                              if (result != null &&
+                                  result['completed'] == true) {
+                                // Task completed via focus session
+                                final updated = task.copyWith(
+                                    isCompleted: true,
+                                    updatedAt: DateTime.now());
+                                if (context.mounted) {
+                                  context
+                                      .read<TaskBloc>()
+                                      .add(UpdateTaskEvent(updated));
+                                }
+                              }
+                            }
+                          : null,
                     );
                   },
                 );
@@ -218,6 +217,46 @@ class _TaskScreenState extends State<TaskScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showEditTaskDialog(BuildContext context, Task task) {
+    final titleController = TextEditingController(text: task.title);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Task'),
+          content: TextField(
+            controller: titleController,
+            decoration: const InputDecoration(
+              hintText: 'Enter task title',
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                final newTitle = titleController.text.trim();
+                if (newTitle.isNotEmpty) {
+                  final updatedTask = task.copyWith(
+                    title: newTitle,
+                    updatedAt: DateTime.now(),
+                  );
+                  context.read<TaskBloc>().add(UpdateTaskEvent(updatedTask));
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

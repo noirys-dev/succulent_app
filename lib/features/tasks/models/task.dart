@@ -9,6 +9,7 @@ class Task {
   final DateTime scheduledDate;
   final DateTime? completedDate;
   final bool isCompleted;
+  final int? durationMinutes;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +22,7 @@ class Task {
     required this.scheduledDate,
     this.completedDate,
     this.isCompleted = false,
+    this.durationMinutes,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -34,6 +36,7 @@ class Task {
     DateTime? scheduledDate,
     DateTime? completedDate,
     bool? isCompleted,
+    int? durationMinutes,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -46,6 +49,7 @@ class Task {
       scheduledDate: scheduledDate ?? this.scheduledDate,
       completedDate: completedDate ?? this.completedDate,
       isCompleted: isCompleted ?? this.isCompleted,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -61,6 +65,7 @@ class Task {
       'scheduledDate': scheduledDate.toIso8601String(),
       'completedDate': completedDate?.toIso8601String(),
       'isCompleted': isCompleted,
+      'durationMinutes': durationMinutes,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -78,6 +83,7 @@ class Task {
           ? DateTime.parse(json['completedDate'] as String)
           : null,
       isCompleted: json['isCompleted'] as bool? ?? false,
+      durationMinutes: json['durationMinutes'] as int?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -85,7 +91,7 @@ class Task {
 
   @override
   String toString() {
-    return 'Task(id: $id, title: $title, category: $category, isCompleted: $isCompleted)';
+    return 'Task(id: $id, title: $title, category: $category, isCompleted: $isCompleted, duration: $durationMinutes)';
   }
 
   @override

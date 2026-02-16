@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:succulent_app/core/theme/app_colors.dart';
-import 'package:succulent_app/core/optimization/app_performance.dart';
+
 import 'package:succulent_app/features/home/presentation/widgets/pomodoro_tile.dart';
 
 class DurationPickerSheet extends StatefulWidget {

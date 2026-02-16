@@ -19,3 +19,10 @@ class DeleteTaskEvent extends TaskEvent {
 
   DeleteTaskEvent(this.taskId);
 }
+
+class ReorderTaskEvent extends TaskEvent {
+  final int oldIndex;
+  final int newIndex;
+
+  ReorderTaskEvent(this.oldIndex, this.newIndex);
+}

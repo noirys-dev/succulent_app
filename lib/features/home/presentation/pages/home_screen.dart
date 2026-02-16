@@ -139,25 +139,29 @@ class _HomeScreenState extends State<HomeScreen> {
                         top: 16,
                         bottom: bottomPanelHeight + 40,
                       ),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            if (filteredHabits.isEmpty) {
-                              return const HomeEmptyState();
-                            }
-                            final habit = filteredHabits[index];
-                            return HabitCard(
-                              key: ValueKey(habit.id),
-                              entry: habit,
-                              index: state.habits.indexOf(habit),
-                              onEdit: () => _openEditHabitSheet(
-                                  state.habits.indexOf(habit)),
-                            );
-                          },
-                          childCount: filteredHabits.isEmpty
-                              ? 1
-                              : filteredHabits.length,
-                        ),
+                      sliver: SliverReorderableList(
+                        itemCount:
+                            filteredHabits.isEmpty ? 1 : filteredHabits.length,
+                        onReorder: (oldIndex, newIndex) {
+                          if (filteredHabits.isEmpty) return;
+                          context
+                              .read<HomeBloc>()
+                              .add(ReorderHabitsEvent(oldIndex, newIndex));
+                        },
+                        itemBuilder: (context, index) {
+                          if (filteredHabits.isEmpty) {
+                            // Non-reorderable empty state
+                            return const HomeEmptyState(key: ValueKey('empty'));
+                          }
+                          final habit = filteredHabits[index];
+                          return HabitCard(
+                            key: ValueKey(habit.id),
+                            entry: habit,
+                            index: state.habits.indexOf(habit),
+                            onEdit: () => _openEditHabitSheet(
+                                state.habits.indexOf(habit)),
+                          );
+                        },
                       ),
                     ),
                   ],

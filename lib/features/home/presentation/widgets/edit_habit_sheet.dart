@@ -281,9 +281,9 @@ class _EditHabitSheetState extends State<EditHabitSheet> {
       ),
       builder: (context) {
         return Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: sheetColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: SafeArea(
             child: Padding(
