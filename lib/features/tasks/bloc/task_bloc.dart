@@ -10,7 +10,6 @@ class TaskBloc extends HydratedBloc<TaskEvent, TaskState> {
     on<AddTaskEvent>(_onAddTask);
     on<UpdateTaskEvent>(_onUpdateTask);
     on<DeleteTaskEvent>(_onDeleteTask);
-    on<ReorderTaskEvent>(_onReorderTask);
   }
 
   void _onAddTask(AddTaskEvent event, Emitter<TaskState> emit) {
@@ -28,21 +27,6 @@ class TaskBloc extends HydratedBloc<TaskEvent, TaskState> {
   void _onDeleteTask(DeleteTaskEvent event, Emitter<TaskState> emit) {
     final updatedTasks =
         state.tasks.where((task) => task.id != event.taskId).toList();
-    emit(state.copyWith(tasks: updatedTasks));
-  }
-
-  void _onReorderTask(ReorderTaskEvent event, Emitter<TaskState> emit) {
-    int oldIndex = event.oldIndex;
-    int newIndex = event.newIndex;
-
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
-
-    final updatedTasks = List<Task>.from(state.tasks);
-    final task = updatedTasks.removeAt(oldIndex);
-    updatedTasks.insert(newIndex, task);
-
     emit(state.copyWith(tasks: updatedTasks));
   }
 

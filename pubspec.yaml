@@ -35,6 +35,7 @@ flutter:
     - assets/splash-icon.svg
     - assets/audio/lofi_focus.mp3
     - assets/audio/focus_complete_chime.mp3
+    - assets/images/succulent/
   fonts:
     - family: Brawler
       fonts:

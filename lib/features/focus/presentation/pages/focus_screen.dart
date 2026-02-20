@@ -476,50 +476,74 @@ class _FocusScreenState extends State<FocusScreen> {
                   ),
                   const SizedBox(height: 16),
                   Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 8),
-                        Text(
-                          'Currently working on:',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.creme.withValues(alpha: 0.7),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.taskTitle,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.creme.withValues(alpha: 0.9),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Container(
-                          height: 120,
-                          width: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.creme.withValues(alpha: 0.08),
-                          ),
-                        ),
-                        if (_isCompleted && _completionMessage != null) ...[
-                          const SizedBox(height: 16),
-                          Text(
-                            _completionMessage!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.creme.withValues(alpha: 0.75),
+                    child: Center(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 12),
+                            Text(
+                              'Currently working on:',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.creme.withValues(alpha: 0.7),
+                              ),
                             ),
-                          ),
-                        ],
-                      ],
+                            const SizedBox(height: 6),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              child: Text(
+                                widget.taskTitle,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.creme.withValues(alpha: 0.9),
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            Container(
+                              height: 140,
+                              width: 140,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.creme.withValues(alpha: 0.08),
+                              ),
+                              child: Center(
+                                child: Image.asset(
+                                  'assets/images/succulent/succulent_stage2.png',
+                                  width: 110,
+                                  height: 110,
+                                ),
+                              ),
+                            ),
+                            if (_isCompleted && _completionMessage != null) ...[
+                              const SizedBox(height: 24),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 32),
+                                child: Text(
+                                  _completionMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    fontStyle: FontStyle.italic,
+                                    color:
+                                        AppColors.creme.withValues(alpha: 0.85),
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   GestureDetector(

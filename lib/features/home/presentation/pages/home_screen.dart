@@ -30,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedDuration = '20m';
   bool _isInputOpen = false;
   final ScrollController _scrollController = ScrollController();
+
   bool _isScrolled = false;
 
   @override
@@ -104,6 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 CustomScrollView(
                   controller: _scrollController,
+                  clipBehavior: Clip.hardEdge,
                   slivers: [
                     SliverPersistentHeader(
                       pinned: true,
@@ -136,21 +138,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     SliverPadding(
                       padding:
                           const EdgeInsets.symmetric(horizontal: 24).copyWith(
-                        top: 16,
+                        top: 0,
                         bottom: bottomPanelHeight + 40,
                       ),
-                      sliver: SliverReorderableList(
+                      sliver: SliverList.builder(
                         itemCount:
                             filteredHabits.isEmpty ? 1 : filteredHabits.length,
-                        onReorder: (oldIndex, newIndex) {
-                          if (filteredHabits.isEmpty) return;
-                          context
-                              .read<HomeBloc>()
-                              .add(ReorderHabitsEvent(oldIndex, newIndex));
-                        },
                         itemBuilder: (context, index) {
                           if (filteredHabits.isEmpty) {
-                            // Non-reorderable empty state
                             return const HomeEmptyState(key: ValueKey('empty'));
                           }
                           final habit = filteredHabits[index];
@@ -158,8 +153,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             key: ValueKey(habit.id),
                             entry: habit,
                             index: state.habits.indexOf(habit),
-                            onEdit: () => _openEditHabitSheet(
-                                state.habits.indexOf(habit)),
+                            isReadOnly: state.isCalendarOpen,
+                            onEdit: () {
+                              if (!state.isCalendarOpen) {
+                                _openEditHabitSheet(
+                                    state.habits.indexOf(habit));
+                              }
+                            },
                           );
                         },
                       ),

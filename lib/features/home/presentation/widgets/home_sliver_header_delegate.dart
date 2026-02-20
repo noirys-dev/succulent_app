@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import '../pages/home_screen_helpers.dart';
 import 'flip_card_bento.dart';
 import 'bento_calendar_view.dart';
+import 'animated_succulent.dart';
 
 class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
   final String userName;
@@ -210,9 +211,9 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
                     ),
                     // The Plant
                     Center(
-                      child: Text(
-                        '🌱',
-                        style: TextStyle(fontSize: currentPlantSize * 0.45),
+                      child: AnimatedSucculent(
+                        streakCount: streakCount,
+                        size: currentPlantSize * 0.85,
                       ),
                     ),
                   ],
@@ -287,10 +288,10 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
                         strokeCap: StrokeCap.round,
                       ),
                     ),
-                    const Center(
-                      child: Text(
-                        '🌱',
-                        style: TextStyle(fontSize: 160 * 0.45),
+                    Center(
+                      child: AnimatedSucculent(
+                        streakCount: streakCount,
+                        size: 130,
                       ),
                     ),
                   ],
@@ -463,7 +464,7 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => 440.0 + topPadding; // Adjusted for new Bento layout
+  double get maxExtent => 390.0 + topPadding; // Adjusted to remove bottom gap
 
   @override
   double get minExtent => 60.0 + topPadding; // Collapsed height
@@ -570,10 +571,16 @@ class HomeSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant HomeSliverHeaderDelegate oldDelegate) {
-    return oldDelegate.completedHabits != completedHabits ||
-        oldDelegate.totalHabits != totalHabits ||
-        oldDelegate.selectedDate != selectedDate ||
-        oldDelegate.streakCount != streakCount ||
+    if (oldDelegate.completedHabits != completedHabits) {
+      return true;
+    }
+    if (oldDelegate.totalHabits != totalHabits) {
+      return true;
+    }
+    if (oldDelegate.selectedDate != selectedDate) {
+      return true;
+    }
+    return oldDelegate.streakCount != streakCount ||
         oldDelegate.focusedTime != focusedTime ||
         oldDelegate.isCalendarOpen != isCalendarOpen ||
         oldDelegate.displayedMonth != displayedMonth ||

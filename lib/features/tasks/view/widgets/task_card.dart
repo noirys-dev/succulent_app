@@ -76,9 +76,6 @@ class TaskCard extends StatelessWidget {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: onEdit,
-                    onLongPress: () {
-                      HapticFeedback.mediumImpact();
-                    },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 14),
@@ -172,8 +169,8 @@ class TaskCard extends StatelessWidget {
                             HapticFeedback.selectionClick();
                             onPlayFocus!();
                           },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
                             child: Icon(
                               Icons.play_arrow_rounded,
                               color: AppColors.darkGreen,

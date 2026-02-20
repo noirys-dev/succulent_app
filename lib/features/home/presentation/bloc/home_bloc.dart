@@ -22,58 +22,6 @@ class HomeBloc extends HydratedBloc<HomeEvent, HomeState> {
     on<ChangeDateEvent>(_onChangeDate);
     on<ToggleCalendarEvent>(_onToggleCalendar);
     on<ChangeDisplayedMonthEvent>(_onChangeDisplayedMonth);
-    on<ReorderHabitsEvent>(_onReorderHabits);
-  }
-
-  void _onReorderHabits(ReorderHabitsEvent event, Emitter<HomeState> emit) {
-    // 1. Get currently filtered habits (same logic as UI)
-    final filteredHabits = state.habits.where((h) {
-      final date = state.selectedDate;
-      return h.createdAt.year == date.year &&
-          h.createdAt.month == date.month &&
-          h.createdAt.day == date.day;
-    }).toList();
-
-    if (event.oldIndex >= filteredHabits.length) return;
-
-    var newIndex = event.newIndex;
-    if (event.oldIndex < newIndex) {
-      newIndex -= 1;
-    }
-
-    if (newIndex > filteredHabits.length) newIndex = filteredHabits.length;
-
-    // 2. Create the new order for filtered habits
-    final movedItem = filteredHabits.removeAt(event.oldIndex);
-    filteredHabits.insert(newIndex, movedItem);
-
-    // 3. Reconstruct the global list
-    // We iterate through the global list. If an item belongs to the current date,
-    // we pick the next item from our newly reordered 'filteredHabits'.
-    // If it belongs to another date, we keep it as is.
-    final List<HabitModel> newGlobalList = [];
-    int filteredIndex = 0;
-
-    for (final habit in state.habits) {
-      final date = state.selectedDate;
-      final isSameDay = habit.createdAt.year == date.year &&
-          habit.createdAt.month == date.month &&
-          habit.createdAt.day == date.day;
-
-      if (isSameDay) {
-        if (filteredIndex < filteredHabits.length) {
-          newGlobalList.add(filteredHabits[filteredIndex]);
-          filteredIndex++;
-        }
-      } else {
-        newGlobalList.add(habit);
-      }
-    }
-
-    // 4. Update repository and state
-    // Note: If you have a backend/DB that persists order, you need to update it here.
-    // Since we are just updating the list in HydratedBloc, this persists locally.
-    emit(state.copyWith(habits: newGlobalList));
   }
 
   void _onChangeDate(ChangeDateEvent event, Emitter<HomeState> emit) {

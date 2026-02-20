@@ -98,13 +98,3 @@ class ChangeDisplayedMonthEvent extends HomeEvent {
   @override
   List<Object?> get props => [month];
 }
-
-class ReorderHabitsEvent extends HomeEvent {
-  final int oldIndex;
-  final int newIndex;
-
-  const ReorderHabitsEvent(this.oldIndex, this.newIndex);
-
-  @override
-  List<Object?> get props => [oldIndex, newIndex];
-}

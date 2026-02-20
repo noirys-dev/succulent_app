@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:succulent_app/core/di/injection.dart' as di;
-import 'package:succulent_app/features/splash/presentation/pages/splash_screen.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:succulent_app/features/home/presentation/bloc/home_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:succulent_app/features/tasks/bloc/task_bloc.dart';
+
+import 'package:succulent_app/debug/succulent_test_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,7 +41,7 @@ class SucculentApp extends StatelessWidget {
             useMaterial3: true,
             fontFamily: 'Brawler',
           ),
-          home: const SplashScreen(),
+          home: const SucculentTestScreen(),
         ));
   }
 }

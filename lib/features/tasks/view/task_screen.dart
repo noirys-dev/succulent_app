@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:succulent_app/features/tasks/bloc/task_bloc.dart';
 import 'package:succulent_app/features/tasks/models/task.dart';
@@ -151,21 +151,9 @@ class _TaskScreenState extends State<TaskScreen> {
                   );
                 }
 
-                return ReorderableListView.builder(
+                return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: state.tasks.length,
-                  onReorder: (oldIndex, newIndex) {
-                    context
-                        .read<TaskBloc>()
-                        .add(ReorderTaskEvent(oldIndex, newIndex));
-                  },
-                  proxyDecorator: (child, index, animation) {
-                    return Material(
-                      color: Colors.transparent,
-                      elevation: 0,
-                      child: child,
-                    );
-                  },
                   itemBuilder: (context, index) {
                     final task = state.tasks[index];
                     return TaskCard(
